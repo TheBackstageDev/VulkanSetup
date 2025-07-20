@@ -5,10 +5,11 @@ namespace vk
 {
     vk_pipeline::vk_pipeline(
         std::unique_ptr<vk_device>& device,
+        std::unique_ptr<vk_swapchain>& swapchain,
         const std::string &vertFilepath,
         const std::string &fragFilepath,
         const pipelineCreateInfo &createInfo)
-        : device(device)
+        : device(device), swapchain(swapchain)
     {
         createPipeline(vertFilepath, fragFilepath, createInfo);
     }
@@ -102,9 +103,9 @@ namespace vk
         pipelineInfo.pColorBlendState = &info.colorBlendInfo;
         pipelineInfo.pDynamicState = &info.dynamicStateInfo;
         pipelineInfo.layout = _pipelineLayout;
-        pipelineInfo.renderPass = VK_NULL_HANDLE;
+        pipelineInfo.renderPass = swapchain->renderPass();
         pipelineInfo.subpass = 0;
-        pipelineInfo.pNext = &info.pipelineRenderingInfo;
+        pipelineInfo.pNext = nullptr;
 
         if (vkCreateGraphicsPipelines(device->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
             throw std::runtime_error("Failed to create graphics pipeline");
@@ -181,7 +182,7 @@ namespace vk
         createInfo.pipelineRenderingInfo.colorAttachmentCount = 1;
         createInfo.pipelineRenderingInfo.pColorAttachmentFormats = &createInfo.colorFormat;
         createInfo.pipelineRenderingInfo.depthAttachmentFormat = vk_swapchain::depthFormat();
-        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = vk_swapchain::depthFormat();
+        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 
         createInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
         createInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

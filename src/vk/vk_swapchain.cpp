@@ -12,10 +12,12 @@ namespace vk
         : _device(device), _context(context)
     {
         createSwapchain();
-        createSynchronizationObjects();
         createImageViews();
         createDepthImageViews();
+        createSynchronizationObjects();
         createCommandPool();
+        createRenderpass();
+        createFramebuffers();
     }
 
     vk_swapchain::~vk_swapchain()
@@ -23,7 +25,6 @@ namespace vk
         for (size_t i = 0; i < _images.size(); ++i)
         {
             vkDestroyImage(_device->device(), _images[i], nullptr);
-            vmaDestroyImage(_context.vk_allocator(), _images[i], _imagesAllocations[i]);
 
             vkDestroyImage(_device->device(), _depthImages[i], nullptr);
             vmaDestroyImage(_context.vk_allocator(), _depthImages[i], _depthImagesAllocations[i]);
@@ -151,7 +152,7 @@ namespace vk
         info.oldSwapchain = VK_NULL_HANDLE;
 
         _imageFormat = surfaceFormat.format;
-        _depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+        _depthFormat = VK_FORMAT_D32_SFLOAT;
 
         if (vkCreateSwapchainKHR(_device->device(), &info, nullptr, &_swapchain) != VK_SUCCESS)
             throw std::runtime_error("Failed to create swapchain");
@@ -172,34 +173,83 @@ namespace vk
             throw std::runtime_error("Failed to create command pool!");
     }
 
+    void vk_swapchain::createRenderpass()
+    {
+        VkAttachmentDescription colorAttachment{};
+        colorAttachment.format = _imageFormat;
+        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference colorAttachmentRef{};
+        colorAttachmentRef.attachment = 0;
+        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format = _depthFormat;
+        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference depthAttachmentRef{};
+        depthAttachmentRef.attachment = 1;
+        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &colorAttachmentRef;
+        subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+        VkAttachmentDescription attachments[] = {
+            colorAttachment, depthAttachment
+        };
+
+        VkRenderPassCreateInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = 2;
+        renderPassInfo.pAttachments = attachments;
+        renderPassInfo.subpassCount = 1;
+        renderPassInfo.pSubpasses = &subpass;
+
+        vkCreateRenderPass(_device->device(), &renderPassInfo, nullptr, &_renderpass);
+    }
+
+    void vk_swapchain::createFramebuffers()
+    {
+        _framebuffers.resize(_imageViews.size());
+
+        for (size_t i = 0; i < _imageViews.size(); ++i) {
+            VkImageView attachments[] = {
+                _imageViews[i],
+                _depthImageViews[i]
+            };
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = _renderpass; 
+            framebufferInfo.attachmentCount = 2;
+            framebufferInfo.pAttachments = attachments;
+            framebufferInfo.width = _extent.width;
+            framebufferInfo.height = _extent.height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(_device->device(), &framebufferInfo, nullptr, &_framebuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("Failed to create framebuffer!");
+            }
+        }
+    }
+
     void vk_swapchain::createImageViews()
     {
-        _imagesAllocations.resize(_images.size());
         _imageViews.resize(_images.size());
 
         for (size_t i = 0; i < _images.size(); ++i)
         {
-            VkImageCreateInfo imageInfo{};
-            imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-            imageInfo.imageType = VK_IMAGE_TYPE_2D;
-            imageInfo.extent.width = _extent.width;
-            imageInfo.extent.height = _extent.height;
-            imageInfo.extent.depth = 1;
-            imageInfo.mipLevels = 1;
-            imageInfo.arrayLayers = 1;
-            imageInfo.format = _imageFormat;
-            imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-            imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-            imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-            imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-            VmaAllocationCreateInfo allocInfo{};
-            allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-
-            if (vmaCreateImage(_context.vk_allocator(), &imageInfo, &allocInfo, &_images[i], &_imagesAllocations[i], nullptr) != VK_SUCCESS)
-                throw std::runtime_error("Failed to create color image");
-
             VkImageViewCreateInfo info{};
             info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             info.image = _images[i];

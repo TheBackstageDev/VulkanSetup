@@ -47,12 +47,17 @@ namespace vk
 
         uint32_t imageAmmount() { return _images.size(); }
         size_t getCurrentFrame() { return _currentFrame; }
+
+        VkRenderPass renderPass() { return _renderpass; }
+        VkFramebuffer framebuffer(uint32_t index) { return _framebuffers[index]; }
     private:
         void createSwapchain();
         void createImageViews();
         void createDepthImageViews();
         void createCommandPool();
         void createSynchronizationObjects();
+        void createRenderpass();
+        void createFramebuffers();
 
         // validations
 
@@ -62,6 +67,7 @@ namespace vk
         static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
         VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
+        VkRenderPass _renderpass = VK_NULL_HANDLE;
         VkCommandPool _commandPool = VK_NULL_HANDLE;
 
         std::vector<VkImage> _images;
@@ -69,11 +75,12 @@ namespace vk
         std::vector<VkImageView> _imageViews;
         std::vector<VkImageView> _depthImageViews;
         
-        std::vector<VmaAllocation> _imagesAllocations;
         std::vector<VmaAllocation> _depthImagesAllocations;
 
         std::vector<FrameSync> _frameSync;
         std::vector<VkFence> _imagesInFlight;
+
+        std::vector<VkFramebuffer> _framebuffers;
 
         static VkFormat _imageFormat;
         static VkFormat _depthFormat;

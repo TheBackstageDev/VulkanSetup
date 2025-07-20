@@ -25,7 +25,7 @@ namespace vk
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
 
-        pipeline = std::make_unique<vk_pipeline>(device, pathToVertex, pathToFragment, pipelineInfo);
+        pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
 
         createCommandBuffers();
     }
@@ -52,65 +52,26 @@ namespace vk
 
     void vk_application::beginRenderpass(VkCommandBuffer cmd)
     {        
-        VkRenderingAttachmentInfoKHR colorAttachment{};
-        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        colorAttachment.imageView = swapchain->imageView(imageIndex);
-        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        VkClearValue clearColor = {{{0.01f, 0.0f, 0.0f, 1.0f}}};
-        colorAttachment.clearValue = clearColor;
+        VkClearValue clearValues[2];
+        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};      // Clear color
+        clearValues[1].depthStencil = {1.0f, 0};                // Clear depth
 
-        VkRenderingAttachmentInfoKHR depthAttachment{};
-        depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-        depthAttachment.imageView = swapchain->depthImageView(imageIndex);
-        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        VkClearValue depthClear = {{1.0f, 0}};
-        depthAttachment.clearValue = depthClear;
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = swapchain->renderPass();
+        renderPassInfo.framebuffer = swapchain->framebuffer(imageIndex);
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = swapchain->extent();
+        renderPassInfo.clearValueCount = 2;
+        renderPassInfo.pClearValues = clearValues;
 
-        VkRenderingInfoKHR renderingInfo{};
-        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-        renderingInfo.renderArea.offset = {0, 0};
-        renderingInfo.renderArea.extent = swapchain->extent();
-        renderingInfo.layerCount = 1;
-        renderingInfo.colorAttachmentCount = 1;
-        renderingInfo.pColorAttachments = &colorAttachment;
-        renderingInfo.pDepthAttachment = &depthAttachment;
-
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = swapchain->image(imageIndex);
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        vkCmdPipelineBarrier(
-            cmd,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
-        );
-
-        vkCmdBeginRenderingKHR(cmd, &renderingInfo);
+        vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = static_cast<float>(renderingInfo.renderArea.extent.width);
-        viewport.height = static_cast<float>(renderingInfo.renderArea.extent.height);
+        viewport.width = static_cast<float>(renderPassInfo.renderArea.extent.width);
+        viewport.height = static_cast<float>(renderPassInfo.renderArea.extent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -121,32 +82,7 @@ namespace vk
 
     void vk_application::endRenderpass(VkCommandBuffer cmd)
     {
-        vkCmdEndRenderingKHR(cmd);
-
-        VkImageMemoryBarrier barrier{};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image = swapchain->image(imageIndex);
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.baseMipLevel = 0;
-            barrier.subresourceRange.levelCount = 1;
-            barrier.subresourceRange.baseArrayLayer = 0;
-            barrier.subresourceRange.layerCount = 1;
-
-            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; 
-            barrier.dstAccessMask = 0;
-
-            vkCmdPipelineBarrier(
-                cmd,
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
-                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier);
+        vkCmdEndRenderPass(cmd);
     }
 
     void vk_application::run()
