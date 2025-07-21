@@ -6,14 +6,8 @@ layout(location = 2) in vec2 uv;
 
 layout(location = 0) out vec3 fragColor;
 
-vec2 positions[3] = vec2[](
-    vec2(0.0, -0.5),  // Bottom center
-    vec2(0.5,  0.5),  // Top right
-    vec2(-0.5, 0.5)   // Top left
-);
-
 void main()
 {
-    gl_Position = vec4(position, 0.0, 1.0);
+    gl_Position = vec4(position, 1.0);
     fragColor = normal;
 }

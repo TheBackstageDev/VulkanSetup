@@ -25,7 +25,6 @@ namespace vk
 
     vk_buffer::~vk_buffer()
     {
-        vmaUnmapMemory(vk_context::vk_allocator(), _allocation);
         vmaDestroyBuffer(vk_context::vk_allocator(), _buffer, _allocation);
     }
 } // namespace vk
