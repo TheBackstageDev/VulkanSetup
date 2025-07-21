@@ -29,9 +29,9 @@ namespace vk
         void init(const vkContextCreateInfo info);
         void shutdown();
 
-        const VkInstance& vk_instance() { return instance; }
-        const VkSurfaceKHR& vk_surface() { return surface; }
-        VmaAllocator& vk_allocator() { return allocator; }
+        const VkInstance vk_instance() { return instance; }
+        const VkSurfaceKHR vk_surface() { return surface; }
+        static VmaAllocator& vk_allocator() { return allocator; }
 
         std::vector<const char*> vk_extensions() { return extensions; }
         std::vector<const char*> vk_layers() { return layers; }
@@ -39,7 +39,7 @@ namespace vk
     private:
         VkInstance instance;
         VkSurfaceKHR surface;
-        VmaAllocator allocator = VK_NULL_HANDLE;
+        static VmaAllocator allocator;
         
         VkDebugUtilsMessengerEXT debugMessenger;
 

@@ -42,7 +42,7 @@ namespace vk
 
         VkDevice _device = VK_NULL_HANDLE;
         VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
-
+        
         vk_context& context;
 
         VkQueue _graphicsQueue;

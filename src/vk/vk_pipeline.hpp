@@ -3,6 +3,7 @@
 #include <volk/volk.h>
 #include "vk_device.hpp"
 #include "vk_swapchain.hpp"
+#include "engine/model_t.hpp"
 
 #include <string>
 #include <vector>

@@ -7,6 +7,8 @@
 
 namespace vk
 {
+    VmaAllocator vk_context::allocator = nullptr;
+    
     void vk_context::init(const vkContextCreateInfo info)
     {
         createInstance(info);

@@ -35,6 +35,17 @@ namespace vk
 
     void vk_application::run()
     {
+        std::vector<eng::model_t::vertex_t> triangle_vertices = {
+            { glm::vec3( 0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.5f, 0.0f) },
+            { glm::vec3( 0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f) },
+            { glm::vec3(-0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f) },
+        };
+
+        std::vector<uint32_t> triangle_indices = {
+            0, 1, 2
+        };
+
+        eng::model_t triangle{triangle_vertices, triangle_indices, device};
         while (!window->should_close())
         {
             glfwPollEvents();
@@ -43,7 +54,8 @@ namespace vk
             {
                 pipeline->bind(cmd);
 
-                vkCmdDraw(cmd, 3, 1, 0, 0);
+                triangle.bind(cmd);
+                triangle.draw(cmd);
 
                 renderer->endFrame(cmd);
             }

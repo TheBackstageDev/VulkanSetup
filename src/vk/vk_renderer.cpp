@@ -43,6 +43,8 @@ namespace vk
         }
 
         window->resetResizedFlag();
+        
+        vkDeviceWaitIdle(device->device());
     }
 
     void vk_renderer::freeCommandBuffers()
