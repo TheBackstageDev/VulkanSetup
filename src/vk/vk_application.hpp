@@ -5,6 +5,7 @@
 #include "vk_device.hpp"
 #include "vk_swapchain.hpp"
 #include "vk_pipeline.hpp"
+#include "vk_renderer.hpp"
 
 #include <memory>
 
@@ -17,26 +18,13 @@ namespace vk
         ~vk_application();
 
         void run();
-
     private:
         vk_context context;
-
-        void createCommandBuffers();
-        void recordCommandBuffers();
-        void freeCommandBuffers();
-
-        void recreateSwapchain();
-
-        void beginRenderpass(VkCommandBuffer cmd);
-        void endRenderpass(VkCommandBuffer cmd);
 
         std::unique_ptr<vk_window> window;
         std::unique_ptr<vk_device> device;
         std::shared_ptr<vk_swapchain> swapchain;
         std::unique_ptr<vk_pipeline> pipeline;
-
-        std::vector<VkCommandBuffer> commandBuffers;
-
-        uint32_t imageIndex = 0;
+        std::unique_ptr<vk_renderer> renderer;
     };
 }
