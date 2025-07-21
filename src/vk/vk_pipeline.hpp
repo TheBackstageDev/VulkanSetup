@@ -36,7 +36,7 @@ namespace vk
     public:
         vk_pipeline(
             std::unique_ptr<vk_device>& device,
-            std::unique_ptr<vk_swapchain>& swapchain,
+            std::shared_ptr<vk_swapchain>& swapchain,
             const std::string &vertFilepath,
             const std::string &fragFilepath,
             const pipelineCreateInfo &createInfo);
@@ -63,7 +63,7 @@ namespace vk
         VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
 
         std::unique_ptr<vk_device>& device;
-        std::unique_ptr<vk_swapchain>& swapchain;
+        std::shared_ptr<vk_swapchain>& swapchain;
     };
     
 } // namespace vk

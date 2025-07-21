@@ -11,6 +11,18 @@ namespace vk
     vk_swapchain::vk_swapchain(std::unique_ptr<vk_device>& device, vk_context& context)
         : _device(device), _context(context)
     {
+        init();
+    }
+
+    vk_swapchain::vk_swapchain(std::unique_ptr<vk_device>& device, vk_context& context, std::shared_ptr<vk_swapchain>& oldSwapchain)
+        : _device(device), _context(context), _oldswapchain(oldSwapchain)
+    {
+        init();
+        oldSwapchain = nullptr;
+    }
+    
+    void vk_swapchain::init()
+    {
         createSwapchain();
         createImageViews();
         createDepthImageViews();
@@ -149,7 +161,7 @@ namespace vk
         info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         info.presentMode = presentMode;
         info.clipped = VK_TRUE;
-        info.oldSwapchain = VK_NULL_HANDLE;
+        info.oldSwapchain = _oldswapchain ? _oldswapchain->_swapchain : VK_NULL_HANDLE;
 
         _imageFormat = surfaceFormat.format;
         _depthFormat = VK_FORMAT_D32_SFLOAT;

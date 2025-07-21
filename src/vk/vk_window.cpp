@@ -24,11 +24,18 @@ namespace vk
         }
 
         glfwSetWindowUserPointer(p_window, this);
+        glfwSetFramebufferSizeCallback(p_window, frameBufferResizeCallback);
     }
 
     vk_window::~vk_window()
     {
         glfwDestroyWindow(p_window);
         glfwTerminate();
+    }
+
+    void vk_window::frameBufferResizeCallback(GLFWwindow *pWindow, int width, int height)
+    {
+        auto window = reinterpret_cast<vk_window *>(glfwGetWindowUserPointer(pWindow));
+        window->_resized = true;
     }
 } // namespace vk

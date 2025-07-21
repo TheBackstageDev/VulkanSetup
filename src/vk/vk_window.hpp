@@ -20,19 +20,26 @@ namespace vk
 
         GLFWwindow* window() { return p_window; }
 
-        std::pair<int32_t, int32_t> dimensions() const 
+        VkExtent2D extent() const 
         {
             int32_t width, height;
 
             glfwGetWindowSize(p_window, &width, &height);
 
-            return std::pair<int32_t, int32_t>(width, height); 
+            return VkExtent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)}; 
         }
 
         bool should_close() { return glfwWindowShouldClose(p_window); }
+        bool resized() { return _resized; }
+
+        void resetResizedFlag() { _resized = false; }
 
         operator GLFWwindow *() const { return p_window; }
     private:
+        static void frameBufferResizeCallback(GLFWwindow *window, int width, int height);
+
+        bool _resized = false;
+        
         const char* title = nullptr;
         GLFWwindow* p_window = nullptr;
     };

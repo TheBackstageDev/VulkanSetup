@@ -23,13 +23,16 @@ namespace vk
 
         void createCommandBuffers();
         void recordCommandBuffers();
+        void freeCommandBuffers();
+
+        void recreateSwapchain();
 
         void beginRenderpass(VkCommandBuffer cmd);
         void endRenderpass(VkCommandBuffer cmd);
 
         std::unique_ptr<vk_window> window;
         std::unique_ptr<vk_device> device;
-        std::unique_ptr<vk_swapchain> swapchain;
+        std::shared_ptr<vk_swapchain> swapchain;
         std::unique_ptr<vk_pipeline> pipeline;
 
         std::vector<VkCommandBuffer> commandBuffers;

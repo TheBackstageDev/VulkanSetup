@@ -32,6 +32,42 @@ namespace vk
 
     vk_application::~vk_application()
     {
+        freeCommandBuffers();
+    }
+
+    void vk_application::recreateSwapchain()
+    {
+        VkExtent2D extent = window->extent();
+
+        while(extent.height == 0 || extent.width == 0)
+        {
+            extent = window->extent();
+            glfwWaitEvents();
+        }
+
+        vkDeviceWaitIdle(device->device());
+
+        if (nullptr == swapchain)
+        {
+            swapchain = std::make_shared<vk_swapchain>(device, context);
+        }
+        else
+        {
+            std::shared_ptr<vk_swapchain> oldswapchain = std::move(swapchain);
+            swapchain = std::make_shared<vk_swapchain>(device, context, oldswapchain);
+
+            if(swapchain->imageAmmount() != commandBuffers.size())
+            {
+                freeCommandBuffers();
+                createCommandBuffers();
+            }
+        }
+
+        window->resetResizedFlag();
+    }
+
+    void vk_application::freeCommandBuffers()
+    {
         vkFreeCommandBuffers(device->device(), swapchain->commandPool(), commandBuffers.size(), commandBuffers.data());
         commandBuffers.clear();
     }
@@ -92,6 +128,12 @@ namespace vk
             glfwPollEvents();
 
             VkResult result = swapchain->acquireNextImage(&imageIndex);
+
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || window->resized())
+            {
+                recreateSwapchain();
+                continue;
+            }
             
             VkCommandBuffer cmd = commandBuffers[imageIndex];
             vkResetCommandBuffer(cmd, 0);

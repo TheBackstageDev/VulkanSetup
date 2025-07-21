@@ -19,7 +19,9 @@ namespace vk
     class vk_swapchain
     {
     public:
-        vk_swapchain(std::unique_ptr<vk_device>& device , vk_context& context);
+        vk_swapchain(std::unique_ptr<vk_device>& device, vk_context& context);
+        vk_swapchain(std::unique_ptr<vk_device>& device, vk_context& context, std::shared_ptr<vk_swapchain>& oldSwapchain);
+
         ~vk_swapchain();
 
         VkResult acquireNextImage(uint32_t *imageIndex);
@@ -59,6 +61,8 @@ namespace vk
         void createRenderpass();
         void createFramebuffers();
 
+        void init();
+
         // validations
 
         bool formatAvailable(VkFormat format);
@@ -88,6 +92,7 @@ namespace vk
 
         vk_context& _context;
         std::unique_ptr<vk_device>& _device;
+        std::shared_ptr<vk_swapchain> _oldswapchain;
 
         size_t currentFrame = 0;
     };
