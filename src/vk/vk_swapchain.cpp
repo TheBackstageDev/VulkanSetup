@@ -164,7 +164,7 @@ namespace vk
         info.oldSwapchain = _oldswapchain ? _oldswapchain->_swapchain : VK_NULL_HANDLE;
 
         _imageFormat = surfaceFormat.format;
-        _depthFormat = VK_FORMAT_D32_SFLOAT;
+        _depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 
         if (vkCreateSwapchainKHR(_device->device(), &info, nullptr, &_swapchain) != VK_SUCCESS)
             throw std::runtime_error("Failed to create swapchain");

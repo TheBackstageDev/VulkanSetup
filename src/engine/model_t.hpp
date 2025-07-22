@@ -19,11 +19,11 @@ namespace eng
 {
     struct transform_t
     {
-        glm::vec3 translation;
-        glm::vec3 scale;
+        glm::vec3 translation{0.0f};
+        glm::vec3 scale{0.5f};
         glm::quat rotation;
 
-        void rotate(glm::vec3 newRotation)
+        void applyRotation(glm::vec3 newRotation)
         {
             glm::vec3 axis = newRotation - getRotationEuler();
             float angle = glm::length(axis);
@@ -53,11 +53,12 @@ namespace eng
         struct vertex_t
         {
             glm::vec3 translation;
+            glm::vec3 color;
             glm::vec3 normal;
             glm::vec2 uv;
 
             static VkVertexInputBindingDescription getBindingDescription();
-            static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
+            static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
         };
 
         model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices, std::unique_ptr<vk::vk_device>& device);

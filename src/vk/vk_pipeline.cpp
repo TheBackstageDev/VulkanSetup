@@ -73,12 +73,17 @@ namespace vk
         shaderStages[1].module = fragModule;
         shaderStages[1].pName = "main";
 
+        VkPushConstantRange range = {};
+        range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        range.offset = 0;
+        range.size = 128;
+
         VkPipelineLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layoutInfo.setLayoutCount = 0;
         layoutInfo.pSetLayouts = nullptr;
-        layoutInfo.pushConstantRangeCount = 0;
-        layoutInfo.pPushConstantRanges = nullptr;
+        layoutInfo.pushConstantRangeCount = 1;
+        layoutInfo.pPushConstantRanges = &range;
 
         auto vertexBindingDescription = eng::model_t::vertex_t::getBindingDescription();
         auto vertexAttributeDescriptions = eng::model_t::vertex_t::getAttributeDescriptions();
@@ -185,7 +190,7 @@ namespace vk
         createInfo.pipelineRenderingInfo.colorAttachmentCount = 1;
         createInfo.pipelineRenderingInfo.pColorAttachmentFormats = &createInfo.colorFormat;
         createInfo.pipelineRenderingInfo.depthAttachmentFormat = vk_swapchain::depthFormat();
-        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = vk_swapchain::depthFormat();
 
         createInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
         createInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
