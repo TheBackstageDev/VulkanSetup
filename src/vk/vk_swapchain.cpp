@@ -36,13 +36,13 @@ namespace vk
     {
         for (size_t i = 0; i < _images.size(); ++i)
         {
-            vkDestroyImage(_device->device(), _images[i], nullptr);
-
-            vkDestroyImage(_device->device(), _depthImages[i], nullptr);
-            vmaDestroyImage(_context.vk_allocator(), _depthImages[i], _depthImagesAllocations[i]);
-
             vkDestroyImageView(_device->device(), _imageViews[i], nullptr);
             vkDestroyImageView(_device->device(), _depthImageViews[i], nullptr);
+
+            if (_depthImages[i] != VK_NULL_HANDLE && _depthImagesAllocations[i] != nullptr)
+            {
+                vmaDestroyImage(_context.vk_allocator(), _depthImages[i], _depthImagesAllocations[i]);
+            }
         }
 
         for (size_t i = 0; i < _frameSync.size(); ++i) 
@@ -50,7 +50,6 @@ namespace vk
             FrameSync& contents = _frameSync[i];
             vkDestroySemaphore(_device->device(), contents.imageAvailable, nullptr);
             vkDestroySemaphore(_device->device(), contents.renderFinished, nullptr);
-            vkDestroyFence(_device->device(), _imagesInFlight[i], nullptr);
             vkDestroyFence(_device->device(), contents.inFlightFence, nullptr);
         }
 
@@ -203,7 +202,9 @@ namespace vk
         depthAttachment.format = _depthFormat;
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; 
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -305,7 +306,7 @@ namespace vk
             imageInfo.format = _depthFormat;
             imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
             imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 

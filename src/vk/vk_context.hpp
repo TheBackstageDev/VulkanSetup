@@ -31,14 +31,18 @@ namespace vk
 
         const VkInstance vk_instance() { return instance; }
         const VkSurfaceKHR vk_surface() { return surface; }
+        const VkDevice vk_device() { return device; }
         static VmaAllocator& vk_allocator() { return allocator; }
 
         std::vector<const char*> vk_extensions() { return extensions; }
         std::vector<const char*> vk_layers() { return layers; }
 
+        void setDeviceHandle(VkDevice handle) { device = handle; }
+
     private:
         VkInstance instance;
         VkSurfaceKHR surface;
+        VkDevice device;
         static VmaAllocator allocator;
         
         VkDebugUtilsMessengerEXT debugMessenger;

@@ -26,14 +26,14 @@ namespace vk
     void vk_context::shutdown()
     {
         #ifdef VK_VALIDATION_LAYERS
-            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
             destroyDebugTools();
         #endif
 
         vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyInstance(instance, nullptr);
-
         vmaDestroyAllocator(allocator);
+
+        vkDestroyDevice(device, nullptr);
+        vkDestroyInstance(instance, nullptr);
     }
 
     // Initializers

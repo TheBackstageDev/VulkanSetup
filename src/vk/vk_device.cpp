@@ -14,8 +14,6 @@ namespace vk
 
     vk_device::~vk_device()
     {
-        context.shutdown();
-        vkDestroyDevice(_device, nullptr);
     }
 
     void vk_device::pickPhydevice(vk_context& context)
@@ -86,6 +84,8 @@ namespace vk
         vkGetDeviceQueue(_device, _queueFamilies.presentFamily.value(), 0, &_presentQueue);
 
         volkLoadDevice(_device);
+
+        context.setDeviceHandle(_device);
     }
 
     void vk_device::createAllocator(vk_context& context)

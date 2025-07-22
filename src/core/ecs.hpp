@@ -293,12 +293,9 @@ template <size_t page_size = 2048> class scene_t {
   };
 
 public:
-  scene_t(entity_id_t max_entities = 1000) : _max_entities(max_entities) {
-    _available_entities.reserve(_max_entities);
-    entity_id_t counter = _max_entities;
-    while (counter--) {
-      _available_entities.push_back(counter);
-    }
+  scene_t(entity_id_t max_entities = 1000) 
+    : _max_entities(max_entities) 
+  {
   }
 
   ~scene_t() {
@@ -320,9 +317,9 @@ public:
   }
 
   entity_id_t create() {
-    assert(_available_entities.size() > 0);
-    entity_id_t id = _available_entities[_available_entities.size() - 1];
-    _available_entities.pop_back();
+    assert(_latest_entity < _max_entities);
+    entity_id_t id = _latest_entity;
+    ++_latest_entity;
 
     if (_entities.size() <= id) {
       entity_description_t entity_description = {
@@ -347,7 +344,7 @@ public:
     }
     entity_description.is_valid = false;
     entity_description.mask = {};
-    _available_entities.push_back(id);
+    --_latest_entity;
   }
 
   template <typename T> T &get(entity_id_t id) {
@@ -443,7 +440,7 @@ public:
 private:
   // TODO: make a free entities queue
   const entity_id_t _max_entities;
-  std::vector<entity_id_t> _available_entities;
+  uint32_t _latest_entity = 0;
   std::vector<entity_description_t> _entities;
   std::vector<base_component_pool_t<page_size> *> _component_pools;
   component_id_t component_id_counter = 0;
