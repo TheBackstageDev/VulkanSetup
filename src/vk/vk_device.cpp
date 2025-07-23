@@ -62,9 +62,22 @@ namespace vk
         VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE; 
 
+        VkPhysicalDeviceBufferDeviceAddressFeatures bdaFeatures{};
+        bdaFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+        bdaFeatures.bufferDeviceAddress = VK_TRUE;
+        bdaFeatures.bufferDeviceAddressCaptureReplay = VK_FALSE; // optional
+        bdaFeatures.bufferDeviceAddressMultiDevice = VK_FALSE;   // optional
+
+        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+        indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+        indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+        indexingFeatures.pNext = &bdaFeatures;
+        
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
         dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
         dynamicRenderingFeature.dynamicRendering = VK_TRUE;
+        dynamicRenderingFeature.pNext = &indexingFeatures;
 
         VkDeviceCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

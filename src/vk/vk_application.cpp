@@ -102,6 +102,8 @@ namespace vk
         scene.construct<eng::model_t>(id, cube_vertices, cube_indices, device);
         scene.construct<eng::transform_t>(id);
 
+        eng::transform_t& transform = scene.get<eng::transform_t>(id);
+        transform.translation = {0.0f, 0.0f, 0.5f};
         glm::vec3 rotation{0.0f, 0.0f, 0.0f};
 
         while (!window->should_close())
@@ -115,8 +117,8 @@ namespace vk
                 eng::transform_t& transform = scene.get<eng::transform_t>(id); 
                 eng::model_t& model = scene.get<eng::model_t>(id);
 
-                rotation.y += 1.0f;
-                rotation.x += 0.1f;
+                rotation.y += 1.5f;
+                rotation.x += 0.2f;
 
                 transform.rotateEuler(rotation);
                 pcModelMatrix modelMatrix { transform.mat4() };

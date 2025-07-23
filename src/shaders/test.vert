@@ -14,6 +14,6 @@ layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-    gl_Position = vec4(position, 1.0f) * push.modelMatrix;
+    gl_Position = push.modelMatrix * vec4(position, 1.0f);
     fragColor = vec4(color, 1.0f);
 }
