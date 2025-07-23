@@ -23,19 +23,14 @@ namespace eng
         glm::vec3 scale{0.5f};
         glm::quat rotation;
 
-        void applyRotation(glm::vec3 newRotation)
+        void applyRotation(glm::vec3 eulerDegreesDelta)
         {
-            glm::vec3 axis = newRotation - getRotationEuler();
-            float angle = glm::length(axis);
+            glm::vec3 radians = glm::radians(eulerDegreesDelta);
+            glm::quat deltaRotation = glm::quat(radians);
 
-            if (angle > glm::epsilon<float>())
-            {
-                axis = glm::normalize(axis);
-                glm::quat deltaRotation = glm::angleAxis(glm::radians(angle), glm::normalize(axis));
-
-                rotation = glm::normalize(deltaRotation * rotation); // Normalize the quaternion to avoid drift
-            }
+            rotation = glm::normalize(deltaRotation * rotation);
         }
+
 
         void rotateEuler(glm::vec3 angles)
         {
