@@ -111,9 +111,9 @@ namespace vk
         pipelineInfo.pColorBlendState = &info.colorBlendInfo;
         pipelineInfo.pDynamicState = &info.dynamicStateInfo;
         pipelineInfo.layout = _pipelineLayout;
-        pipelineInfo.renderPass = swapchain->renderPass();
+        pipelineInfo.renderPass = nullptr;
         pipelineInfo.subpass = 0;
-        pipelineInfo.pNext = nullptr;
+        pipelineInfo.pNext = &info.pipelineRenderingInfo;
 
         if (vkCreateGraphicsPipelines(device->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
             throw std::runtime_error("Failed to create graphics pipeline");
