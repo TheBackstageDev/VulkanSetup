@@ -26,19 +26,14 @@ namespace vk
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
 
-        renderer = std::make_unique<vk_renderer>(swapchain, device, context, window);
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
+        renderer = std::make_unique<vk_renderer>(pipeline, swapchain, device, context, window);
     }
 
     vk_application::~vk_application()
     {
     }
-
-    struct pcModelMatrix
-    {
-        glm::mat4 modelMatrix;
-    };
-
+    
     void vk_application::run()
     {
         std::vector<eng::model_t::vertex_t> cube_vertices = {
@@ -112,26 +107,9 @@ namespace vk
 
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
-                pipeline->bind(cmd);
-
-                eng::transform_t& transform = scene.get<eng::transform_t>(id); 
-                eng::model_t& model = scene.get<eng::model_t>(id);
-
                 transform.applyRotation(rotation);
-                pcModelMatrix modelMatrix { transform.mat4() };
-
-                vkCmdPushConstants(
-                    cmd,
-                    pipeline->layout(),
-                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    0,
-                    sizeof(modelMatrix),
-                    &modelMatrix
-                );
-
-                model.bind(cmd);
-                model.draw(cmd);
-
+                
+                renderer->renderScene(scene);
                 renderer->endFrame(cmd);
             }
         }

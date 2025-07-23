@@ -1,10 +1,16 @@
 #include "vk_renderer.hpp"
 #include <iostream>
+#include <cassert>
 
 namespace vk
 {
-    vk_renderer::vk_renderer(std::shared_ptr<vk_swapchain>& swapchain, std::unique_ptr<vk_device>& device, vk_context& context, std::unique_ptr<vk_window>& window)
-        : swapchain(swapchain), device(device), context(context), window(window)
+    vk_renderer::vk_renderer(
+        std::unique_ptr<vk_pipeline>& pipeline, 
+        std::shared_ptr<vk_swapchain>& swapchain, 
+        std::unique_ptr<vk_device>& device, 
+        vk_context& context, std::unique_ptr<vk_window>& window
+    )    
+        : pipeline(pipeline), swapchain(swapchain), device(device), context(context), window(window)
     {
         createCommandBuffers();
     }
@@ -104,6 +110,7 @@ namespace vk
 
     VkCommandBuffer vk_renderer::startFrame()
     {
+        assert(!isFrameRunning && "Cannot start new frame while another is running!");
         VkResult result = swapchain->acquireNextImage(&imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || window->resized())
@@ -124,15 +131,46 @@ namespace vk
 
         beginRenderpass(cmd);
 
+        isFrameRunning = true;
+
         return cmd;
     }
 
     void vk_renderer::endFrame(VkCommandBuffer cmd)
     {
+        assert(isFrameRunning && "Must have started the frame before ending it!");
+
         endRenderpass(cmd);
         if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
             throw std::runtime_error("Failed to end command buffer!");
 
         swapchain->submitCommandBuffers(&cmd, &imageIndex);
+
+        isFrameRunning = false;
+    }
+
+    void vk_renderer::renderScene(ecs::scene_t<>& scene)
+    {
+        assert(isFrameRunning && "Must have started the frame before rendering!");
+        VkCommandBuffer cmd = currentCommandBuffer();
+
+        pipeline->bind(cmd);
+
+        scene.for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
+        {
+            pcModelMatrix modelMatrix = { transform.mat4() };
+
+                vkCmdPushConstants(
+                    cmd,
+                    pipeline->layout(),
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0,
+                    sizeof(modelMatrix),
+                    &modelMatrix
+                );
+
+                model.bind(cmd);
+                model.draw(cmd);
+        });
     }
 } // namespace vk
