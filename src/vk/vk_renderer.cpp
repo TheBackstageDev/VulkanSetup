@@ -142,10 +142,8 @@ namespace vk
             0, nullptr,
             1, &barrier);
 
-
         vkCmdBeginRenderingKHR(cmd, &renderingInfo);
     }
-
 
     void vk_renderer::endRenderpass(VkCommandBuffer cmd)
     {

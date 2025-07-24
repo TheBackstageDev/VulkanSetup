@@ -10,10 +10,15 @@ namespace vk
         pickPhydevice(context);
         createDevice(context);
         createAllocator(context);
+
+        createDescriptorPools(context);
+        createResourceChannels(context);
     }
 
     vk_device::~vk_device()
     {
+        vkDestroyDescriptorPool(_device, _uniformDescriptorPool, nullptr);
+        vkDestroyDescriptorPool(_device, _SSBOdescriptorPool, nullptr);
     }
 
     void vk_device::pickPhydevice(vk_context& context)
@@ -78,6 +83,8 @@ namespace vk
         dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
         dynamicRenderingFeature.dynamicRendering = VK_TRUE;
         dynamicRenderingFeature.pNext = &indexingFeatures;
+
+        vkGetPhysicalDeviceProperties(_physical_device, &_properties);
 
         VkDeviceCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -173,6 +180,84 @@ namespace vk
         }
 
         return true;
+    }
+
+    void vk_device::createDescriptorPools(vk_context& context)
+    {
+        VkDescriptorPoolSize uniformSize{};
+        uniformSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformSize.descriptorCount = _properties.limits.maxDescriptorSetUniformBuffers;
+
+        VkDescriptorPoolCreateInfo uniformPoolInfo{};
+        uniformPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        uniformPoolInfo.maxSets = numUniform;
+        uniformPoolInfo.poolSizeCount = 1;
+        uniformPoolInfo.pPoolSizes = &uniformSize;
+        uniformPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+        VkDescriptorPoolSize SSBOSizes[] = {
+            {
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = _properties.limits.maxDescriptorSetSampledImages,
+            },
+            {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = _properties.limits.maxDescriptorSetStorageBuffers,
+            }
+        };
+
+        VkDescriptorPoolCreateInfo ssboPoolInfo{};
+        ssboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        ssboPoolInfo.maxSets = numSSBO;
+        ssboPoolInfo.poolSizeCount = 2;
+        ssboPoolInfo.pPoolSizes = SSBOSizes;
+        ssboPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+        if (vkCreateDescriptorPool(_device, &uniformPoolInfo, nullptr, &_uniformDescriptorPool) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create uniform descriptor pool");
+        }
+
+        if (vkCreateDescriptorPool(_device, &ssboPoolInfo, nullptr, &_SSBOdescriptorPool) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create SSBO descriptor pool");
+        }
+    }
+
+    void vk_device::allocateSet(VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t count)
+    {
+
+    }
+
+    void vk_device::createResourceChannels(vk_context& context)
+    {
+
+    }
+
+    // resourceChannel
+
+    vk_resourcechannel::vk_resourcechannel(vk_device& device, uint32_t channelId)
+        : _device(device), _channelId(channelId)
+    {
+
+    }
+
+    void vk_resourcechannel::gotoNext()
+    {
+        
+    }
+
+    void vk_resourcechannel::gotoCurrent()
+    {
+
+    }
+
+    void vk_resourcechannel::bind()
+    {
+
+    }
+
+    void vk_resourcechannel::free()
+    {
+
     }
 
 } // namespace vk

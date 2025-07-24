@@ -16,6 +16,8 @@ namespace vk
         }
     };
 
+    class vk_resourcechannel;
+
     class vk_device
     {
     public:
@@ -35,6 +37,10 @@ namespace vk
         void pickPhydevice(vk_context& context);
         void createDevice(vk_context& context);
         void createAllocator(vk_context& context);
+        void createDescriptorPools(vk_context& context); 
+        void createResourceChannels(vk_context& context);
+
+        void allocateSet(VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t count = 1000);
 
         bool isDeviceSuitable(VkPhysicalDevice& device, vk_context& context);
 
@@ -50,6 +56,32 @@ namespace vk
 
         QueueFamilyIndices _queueFamilies;
 
+        const uint32_t numUniform = 2;
+        const uint32_t numSSBO = 1;
+
+        VkDescriptorPool _uniformDescriptorPool;
+        VkDescriptorPool _SSBOdescriptorPool;
+
+        VkPhysicalDeviceProperties _properties; 
+
         std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
     };
+
+    class vk_resourcechannel
+    {
+    public:
+        vk_resourcechannel(vk_device& device, uint32_t channelId);
+        
+        void bind();
+        void free();
+
+        void gotoCurrent();
+        void gotoNext();
+
+        uint32_t _index = -1;
+    private:
+        uint32_t _channelId = -1;
+        vk_device& _device;
+    };
+
 } // namespace vk
