@@ -4,6 +4,8 @@
 #include "vk_context.hpp"
 
 #include <optional>
+#include <array>
+#include <vector>
 
 namespace vk
 {
@@ -14,6 +16,14 @@ namespace vk
         bool isComplete() const {
             return graphicsFamily.has_value() && presentFamily.has_value();
         }
+    };
+
+    struct vk_descriptordata
+    {
+        union {
+            VkDescriptorBufferInfo* pBufferInfo;
+            VkDescriptorImageInfo* pImageInfo;
+        }; 
     };
 
     class vk_resourcechannel;
@@ -32,7 +42,15 @@ namespace vk
 
         uint32_t graphicsFamily() const { return _queueFamilies.graphicsFamily.value(); }
         uint32_t presentFamily() const { return _queueFamilies.presentFamily.value(); }
+
+        // Returns the channel and index of the data which was set;
+        std::pair<uint32_t, uint32_t> setDescriptorData(vk_descriptordata& data, uint32_t channel = -1 /* channel if you alreadly have one */, uint32_t index = -1);
+        void freeDescriptorData(uint32_t index, uint32_t channelId);
+
+        VkDescriptorSet& getDescriptorSet(uint32_t channelId) { return _sets[channelId]; }
+        std::vector<VkDescriptorSetLayout> getSetLayouts() const { return _setLayouts; }
     private:
+        friend vk_resourcechannel;
 
         void pickPhydevice(vk_context& context);
         void createDevice(vk_context& context);
@@ -40,7 +58,7 @@ namespace vk
         void createDescriptorPools(vk_context& context); 
         void createResourceChannels(vk_context& context);
 
-        void allocateSet(VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t count = 1000);
+        void allocateSets();
 
         bool isDeviceSuitable(VkPhysicalDevice& device, vk_context& context);
 
@@ -56,11 +74,16 @@ namespace vk
 
         QueueFamilyIndices _queueFamilies;
 
-        const uint32_t numUniform = 2;
-        const uint32_t numSSBO = 1;
+        uint32_t numUniform = 2;
+        uint32_t numSSBO = 1;
 
         VkDescriptorPool _uniformDescriptorPool;
         VkDescriptorPool _SSBOdescriptorPool;
+
+        std::vector<VkDescriptorSet> _sets;
+        std::vector<VkDescriptorSetLayout> _setLayouts;
+
+        std::vector<vk_resourcechannel> _channels;
 
         VkPhysicalDeviceProperties _properties; 
 
@@ -70,17 +93,28 @@ namespace vk
     class vk_resourcechannel
     {
     public:
-        vk_resourcechannel(vk_device& device, uint32_t channelId);
+        vk_resourcechannel(vk_device& device, uint32_t channelId, size_t size, VkDescriptorType type);
         
-        void bind();
+        void bind(const vk_descriptordata& data);
         void free();
 
         void gotoCurrent();
         void gotoNext();
+        void gotoIndex(uint32_t index) { _index = index; }
 
-        uint32_t _index = -1;
+        size_t getSize() { return _maxIndices; }
+        uint32_t getIndex() { return _index; }
     private:
         uint32_t _channelId = -1;
+        uint32_t _index = -1;
+
+        VkDescriptorType _type;
+
+        const size_t _maxIndices = 0;
+        size_t _countIndices = 0;
+
+        std::vector<uint32_t> freeIndices;
+
         vk_device& _device;
     };
 

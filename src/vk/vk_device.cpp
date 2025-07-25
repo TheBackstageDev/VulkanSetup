@@ -1,6 +1,7 @@
 #include "vk_device.hpp"
 #include <iostream>
 #include <set>
+#include <string>
 
 namespace vk
 {
@@ -12,6 +13,7 @@ namespace vk
         createAllocator(context);
 
         createDescriptorPools(context);
+        allocateSets();
         createResourceChannels(context);
     }
 
@@ -193,7 +195,7 @@ namespace vk
         uniformPoolInfo.maxSets = numUniform;
         uniformPoolInfo.poolSizeCount = 1;
         uniformPoolInfo.pPoolSizes = &uniformSize;
-        uniformPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+        uniformPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
         VkDescriptorPoolSize SSBOSizes[] = {
             {
@@ -211,7 +213,7 @@ namespace vk
         ssboPoolInfo.maxSets = numSSBO;
         ssboPoolInfo.poolSizeCount = 2;
         ssboPoolInfo.pPoolSizes = SSBOSizes;
-        ssboPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+        ssboPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
         if (vkCreateDescriptorPool(_device, &uniformPoolInfo, nullptr, &_uniformDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create uniform descriptor pool");
@@ -222,42 +224,164 @@ namespace vk
         }
     }
 
-    void vk_device::allocateSet(VkDescriptorPool pool, VkDescriptorSetLayout layout, size_t count)
+    void vk_device::allocateSets()
     {
+        _sets.resize(numUniform + numSSBO, VK_NULL_HANDLE);
+        _setLayouts.resize(numUniform + numSSBO, VK_NULL_HANDLE);
 
+        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        {
+            VkDescriptorSetLayoutBinding binding{};
+            binding.binding = 0;
+            binding.descriptorCount = 1;
+            binding.descriptorType = (i < numUniform) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            binding.pImmutableSamplers = nullptr;
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 1;
+            layoutInfo.pBindings = &binding;
+
+            if (vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_setLayouts[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create descriptor set layout at index " + std::to_string(i));
+            }
+        }
+
+        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        {
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = i < numUniform ? _uniformDescriptorPool : _SSBOdescriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &_setLayouts[i];
+
+            if (vkAllocateDescriptorSets(_device, &allocInfo, &_sets[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to allocate descriptor set " + std::to_string(i));
+            }
+        }
     }
 
     void vk_device::createResourceChannels(vk_context& context)
     {
+        _channels.reserve(numUniform + numSSBO);
 
+        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        {
+            vk_resourcechannel channel{
+                *this,
+                static_cast<uint32_t>(i),
+                (i < numUniform)
+                    ? _properties.limits.maxDescriptorSetUniformBuffers
+                    : _properties.limits.maxPerStageDescriptorStorageBuffers,
+                (i < numUniform)
+                    ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                    : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+            };
+
+            _channels.push_back(std::move(channel));
+        }
+    }
+
+    // Returns the channel and index of the data which was set;
+    std::pair<uint32_t, uint32_t> vk_device::setDescriptorData(vk_descriptordata& data, uint32_t channel, uint32_t index)
+    {
+        if (channel != UINT32_MAX)
+        {
+            auto& _channel = _channels[channel];
+            _channel.gotoIndex(index);
+            _channel.bind(data);
+
+            return std::pair<uint32_t, uint32_t>{channel, index};
+        }
+
+        uint32_t channelId = 0;
+        uint32_t newIndex = 0;
+
+        int32_t start = data.pBufferInfo ? 0 : numUniform;
+        int32_t end = data.pBufferInfo ? numUniform : numUniform + numSSBO;
+
+        for (int32_t i = start; i < end; ++i)
+        {
+            auto& channel = _channels[i];
+            channel.gotoNext();
+
+            newIndex = channel.getIndex();
+            if (newIndex != channel.getSize())
+            {
+                channelId = i;
+                _channels[channelId].bind(data);
+
+                break;
+            }
+        }
+
+        return std::pair<uint32_t, uint32_t>{channelId, newIndex};
+    }
+
+    void vk_device::freeDescriptorData(uint32_t index, uint32_t channelId)
+    {
+        _channels[channelId].gotoIndex(index);
+        _channels[channelId].free();
     }
 
     // resourceChannel
 
-    vk_resourcechannel::vk_resourcechannel(vk_device& device, uint32_t channelId)
-        : _device(device), _channelId(channelId)
+    vk_resourcechannel::vk_resourcechannel(vk_device& device, uint32_t channelId, size_t size, VkDescriptorType type)
+        : _device(device), _channelId(channelId), _maxIndices(size), _type(type)
     {
-
+        freeIndices.reserve(_maxIndices);
     }
 
     void vk_resourcechannel::gotoNext()
     {
-        
+        if (!freeIndices.empty()) {
+            _index = freeIndices.back();
+            freeIndices.pop_back();
+        } else if (_countIndices < _maxIndices) {
+            _index = _countIndices++;
+        } else {
+            _index = _maxIndices;
+        }
     }
 
     void vk_resourcechannel::gotoCurrent()
     {
-
+        if (_countIndices < _maxIndices) {
+            _index = _countIndices;
+        } else {
+            _index = _maxIndices; 
+        }
     }
 
-    void vk_resourcechannel::bind()
+    void vk_resourcechannel::bind(const vk_descriptordata& data)
     {
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = _device._sets[_channelId];
+        write.dstBinding = 0;
+        write.dstArrayElement = _index;        
+        write.descriptorCount = 1;
+        write.descriptorType = _type;
 
+        if (_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || 
+            _type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+            write.pBufferInfo = data.pBufferInfo;
+        } else {
+            write.pImageInfo = data.pImageInfo;
+        }
+
+        vkUpdateDescriptorSets(_device.device(), 1, &write, 0, nullptr);
+        
+        --_countIndices;
     }
 
     void vk_resourcechannel::free()
     {
-
+        freeIndices.push_back(_index);
+        _index = -1;
     }
 
 } // namespace vk

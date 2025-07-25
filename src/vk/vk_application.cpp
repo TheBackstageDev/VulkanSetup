@@ -2,6 +2,8 @@
 #include "core/ecs.hpp"
 #include <iostream>
 
+#include "engine/camera_t.hpp"
+
 namespace vk
 {
     vk_application::vk_application()
@@ -25,6 +27,7 @@ namespace vk
 
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
+        pipelineInfo.descriptorSetLayouts = device->getSetLayouts();
 
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
         renderer = std::make_unique<vk_renderer>(pipeline, swapchain, device, context, window);
@@ -101,6 +104,27 @@ namespace vk
         transform.translation = {0.0f, 0.0f, 0.5f};
         glm::vec3 rotation{0.8f, 0.5f, 0.5f};
 
+        eng::camera_t cam(0.01f, 1000.f);
+        glm::mat4 projection = cam.orthoView();
+
+        vk::vk_buffer cameraBuffer(
+            device,
+            &projection,
+            sizeof(glm::mat4),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
+
+        VkDescriptorBufferInfo camInfo{};
+        camInfo.buffer = cameraBuffer.buffer();
+        camInfo.offset = 0;
+        camInfo.range = sizeof(glm::mat4);
+
+        vk_descriptordata camData{};
+        camData.pBufferInfo = &camInfo;
+
+        std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
+
         while (!window->should_close())
         {
             glfwPollEvents();
@@ -108,7 +132,21 @@ namespace vk
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
                 transform.applyRotation(rotation);
-                
+
+                glm::mat4 updatedProjection = cam.orthoView();
+                memcpy(cameraBuffer.mapped(), &updatedProjection, sizeof(glm::mat4));
+
+                vkCmdBindDescriptorSets(
+                    cmd,                            
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,   
+                    pipeline->layout(),                     
+                    0,                               
+                    1,                          
+                    &device->getDescriptorSet(cameraChannelInfo.first), 
+                    0,                                 
+                    &cameraChannelInfo.second         
+                );
+
                 renderer->renderScene(scene);
                 renderer->endFrame(cmd);
             }

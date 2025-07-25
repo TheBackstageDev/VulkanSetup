@@ -80,8 +80,8 @@ namespace vk
 
         VkPipelineLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layoutInfo.setLayoutCount = 0;
-        layoutInfo.pSetLayouts = nullptr;
+        layoutInfo.setLayoutCount = static_cast<uint32_t>(info.descriptorSetLayouts.size());
+        layoutInfo.pSetLayouts = info.descriptorSetLayouts.data();
         layoutInfo.pushConstantRangeCount = 1;
         layoutInfo.pPushConstantRanges = &range;
 

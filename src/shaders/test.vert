@@ -12,8 +12,12 @@ layout(location = 3) in vec2 uv;
 
 layout(location = 0) out vec4 fragColor;
 
+layout(set = 0, binding = 0) uniform globalBuffer {
+    mat4 view;
+} global;
+
 void main()
 {
-    gl_Position = push.modelMatrix * vec4(position, 1.0f);
+    gl_Position = global.view * push.modelMatrix * vec4(position, 1.0f);
     fragColor = vec4(color, 1.0f);
 }

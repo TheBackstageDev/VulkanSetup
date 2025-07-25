@@ -26,7 +26,8 @@ namespace vk
         VkPipelineRenderingCreateInfo pipelineRenderingInfo;
         std::vector<VkDynamicState> dynamicStateEnables;
         VkPipelineDynamicStateCreateInfo dynamicStateInfo;
-        VkPipelineLayout pipelineLayout = nullptr;
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+
 
         VkFormat colorFormat = VK_FORMAT_R8G8B8A8_SRGB;
         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
