@@ -50,6 +50,8 @@ namespace vk
         uint32_t imageAmmount() { return _images.size(); }
         size_t getCurrentFrame() { return _currentFrame; }
 
+        float getAspectRatio() { return static_cast<float>(_extent.width) / static_cast<float>(_extent.height); }
+
     private:
         void createSwapchain();
         void createImageViews();

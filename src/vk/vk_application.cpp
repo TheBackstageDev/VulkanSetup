@@ -104,8 +104,12 @@ namespace vk
         transform.translation = {0.0f, 0.0f, 0.5f};
         glm::vec3 rotation{0.8f, 0.5f, 0.5f};
 
-        eng::camera_t cam(0.01f, 1000.f);
-        glm::mat4 projection = cam.orthoView();
+        eng::camera_t cam;
+
+        float aspect = swapchain->getAspectRatio();
+        cam.ortho(-aspect, aspect, -1, 1, -1, 1);
+
+        glm::mat4 projection = cam.getProjection();
 
         vk::vk_buffer cameraBuffer(
             device,
@@ -133,8 +137,10 @@ namespace vk
             {
                 transform.applyRotation(rotation);
 
-                glm::mat4 updatedProjection = cam.orthoView();
-                memcpy(cameraBuffer.mapped(), &updatedProjection, sizeof(glm::mat4));
+                float aspect = swapchain->getAspectRatio();
+                cam.ortho(-aspect, aspect, -1, 1, -1, 1);
+                
+                memcpy(cameraBuffer.mapped(), &cam.getProjection(), sizeof(glm::mat4));
 
                 vkCmdBindDescriptorSets(
                     cmd,                            

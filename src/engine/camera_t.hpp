@@ -10,17 +10,20 @@ namespace eng
     class camera_t
     {
     public:
-        camera_t(float near = 0.1f, float far = 100.f);
+        camera_t();
         ~camera_t();
 
-        glm::mat4 orthoView();
+        void ortho(float left, float right, float top, float bottom, float near, float far);
+        void perspective(float fovy, float aspect, float near, float far);
+
+        glm::mat4& getProjection() { return projection; }
+        glm::mat4& getView() { return view; }
     private:
+        glm::mat4 projection{1.0f};
         glm::mat4 view{1.0f};
 
         glm::vec3 target{0.0f};
 
         void lookAt(glm::vec3 pos);
-
-        float _near, _far;
     };
 } // namespace eng
