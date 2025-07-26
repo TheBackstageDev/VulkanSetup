@@ -41,7 +41,7 @@ namespace vk
     void vk_context::createInstance(const vkContextCreateInfo& info)
     {
         VkApplicationInfo appInfo{};
-        appInfo.apiVersion = VK_API_VERSION_1_4;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pApplicationName = info.pWindow->get_title();

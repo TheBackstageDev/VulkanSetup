@@ -22,8 +22,8 @@ namespace vk
         device = std::make_unique<vk_device>(context);
         swapchain = std::make_unique<vk_swapchain>(device, context);
 
-        const std::string pathToVertex = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.vert.spv";
-        const std::string pathToFragment = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.frag.spv";
+        const std::string pathToVertex = "src\\shaders\\test.vert.spv";
+        const std::string pathToFragment = "src\\shaders\\test.frag.spv";
 
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
@@ -78,18 +78,23 @@ namespace vk
         };
 
         std::vector<uint32_t> cube_indices = {
-            // Front face (0–3)
-            0, 1, 2,  0, 2, 3, 
-            // Back face (4–7)
-            4, 7, 6,  4, 6, 5,  
-            // Left face (8–11)
-            8, 9, 10,  8, 10, 11,  
-            // Right face (12–15)
-            12, 13, 14,  12, 14, 15, 
-            // Top face (16–19)
-            16, 17, 18,  16, 18, 19,
-            // Bottom face (20–23)
-            20, 21, 22,  20, 22, 23 
+            // Front face (0–3): 0, 1, 2,  0, 2, 3 -> 0, 2, 1,  0, 3, 2
+            0, 2, 1,  0, 3, 2,
+            
+            // Back face (4–7): 4, 7, 6,  4, 6, 5 -> 4, 6, 7,  4, 5, 6
+            4, 6, 7,  4, 5, 6,
+            
+            // Left face (8–11): 8, 9, 10,  8, 10, 11 -> 8, 10, 9,  8, 11, 10
+            8, 10, 9,  8, 11, 10,
+            
+            // Right face (12–15): 12, 13, 14,  12, 14, 15 -> 12, 14, 13,  12, 15, 14
+            12, 14, 13,  12, 15, 14,
+            
+            // Top face (16–19): 16, 17, 18,  16, 18, 19 -> 16, 18, 17,  16, 19, 18
+            16, 18, 17,  16, 19, 18,
+            
+            // Bottom face (20–23): 20, 21, 22,  20, 22, 23 -> 20, 22, 21,  20, 23, 22
+            20, 22, 21,  20, 23, 22
         };
 
         eng::model_t cube(cube_vertices, cube_indices, device);
@@ -101,7 +106,7 @@ namespace vk
         scene.construct<eng::transform_t>(id);
 
         eng::transform_t& transform = scene.get<eng::transform_t>(id);
-        transform.translation = {0.0f, 0.0f, 0.5f};
+        transform.translation = {0.0f, 0.0f, 2.0f};
         glm::vec3 rotation{0.8f, 0.5f, 0.5f};
 
         eng::camera_t cam;
@@ -138,7 +143,7 @@ namespace vk
                 transform.applyRotation(rotation);
 
                 float aspect = swapchain->getAspectRatio();
-                cam.ortho(-aspect, aspect, -1, 1, -1, 1);
+                cam.perspective(70.f, aspect, 0.01, 100);
                 
                 memcpy(cameraBuffer.mapped(), &cam.getProjection(), sizeof(glm::mat4));
 
