@@ -225,6 +225,8 @@ namespace vk
 
         scene.for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
         {
+            transform.applyRotation(glm::vec3(0.0f, 0.5f, 0.6f)); 
+
             pcModelMatrix modelMatrix = { transform.mat4() };
 
             vkCmdPushConstants(

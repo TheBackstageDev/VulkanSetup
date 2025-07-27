@@ -2,7 +2,9 @@
 
 namespace vk
 {
-    vk_buffer::vk_buffer(std::unique_ptr<vk_device>& device, const void* data, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+    vk_buffer::vk_buffer(std::unique_ptr<vk_device>& device, const void* data, 
+    VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+        : _size(size)
     {
         VkBufferCreateInfo bufferInfo = {};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

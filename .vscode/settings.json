@@ -75,6 +75,13 @@
         "xutility": "cpp",
         "*.rh": "cpp",
         "fstream": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "numbers": "cpp",
+        "queue": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "string_view": "cpp"
     }
 }

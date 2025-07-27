@@ -14,10 +14,11 @@ layout(location = 0) out vec4 fragColor;
 
 layout(set = 0, binding = 0) uniform globalBuffer {
     mat4 projection;
+    mat4 view;
 } global;
 
 void main()
 {
-    gl_Position = global.projection * push.modelMatrix * vec4(position, 1.0f);
+    gl_Position = (global.projection * global.view) * push.modelMatrix * vec4(position, 1.0f);
     fragColor = vec4(color, 1.0f);
 }

@@ -5,25 +5,33 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "core/ecs.hpp"
+#include "engine/transform_t.hpp"
+
 namespace eng
 {
     class camera_t
     {
     public:
-        camera_t();
-        ~camera_t();
+        camera_t(ecs::scene_t<>& scene);
 
         void ortho(float left, float right, float top, float bottom, float near, float far);
         void perspective(float fovy, float aspect, float near, float far);
 
+        void lookAt(glm::vec3 target, glm::vec3 up = {0.0f, -1.0f, 0.0f});
+
         glm::mat4& getProjection() { return projection; }
         glm::mat4& getView() { return view; }
+
+        ecs::entity_id_t getId() const { return _id; }
     private:
+        void setViewDirection(glm::vec3 translation, glm::quat dir, glm::vec3 up = {0.0f, -1.0f, 0.0f});
+        void setViewYXZ(glm::vec3 translation, glm::quat direction);
+
+        ecs::entity_id_t _id = ecs::null_entity_id;
+        ecs::scene_t<>& _scene;
+
         glm::mat4 projection{1.0f};
         glm::mat4 view{1.0f};
-
-        glm::vec3 target{0.0f};
-
-        void lookAt(glm::vec3 pos);
     };
 } // namespace eng

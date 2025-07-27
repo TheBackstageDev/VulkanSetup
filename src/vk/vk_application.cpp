@@ -104,22 +104,26 @@ namespace vk
         ecs::entity_id_t id = scene.create();
         scene.construct<eng::model_t>(id, cube_vertices, cube_indices, device);
         scene.construct<eng::transform_t>(id);
+        struct globalBuffer
+        {
+            alignas(16) glm::mat4 projection;
+            alignas(16) glm::mat4 view;
+        } globalData;
 
         eng::transform_t& transform = scene.get<eng::transform_t>(id);
         transform.translation = {0.0f, 0.0f, 2.0f};
-        glm::vec3 rotation{0.8f, 0.5f, 0.5f};
 
-        eng::camera_t cam;
+        eng::camera_t cam{scene};
 
         float aspect = swapchain->getAspectRatio();
-        cam.ortho(-aspect, aspect, -1, 1, -1, 1);
-
-        glm::mat4 projection = cam.getProjection();
+        cam.perspective(70.f, aspect, 0.01f, 100.f);
+        globalData.projection = cam.getProjection();
+        globalData.view = cam.getView();
 
         vk::vk_buffer cameraBuffer(
             device,
-            &projection,
-            sizeof(glm::mat4),
+            &globalData,
+            sizeof(globalData),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU
         );
@@ -127,7 +131,7 @@ namespace vk
         VkDescriptorBufferInfo camInfo{};
         camInfo.buffer = cameraBuffer.buffer();
         camInfo.offset = 0;
-        camInfo.range = sizeof(glm::mat4);
+        camInfo.range = sizeof(globalData);
 
         vk_descriptordata camData{};
         camData.pBufferInfo = &camInfo;
@@ -140,13 +144,17 @@ namespace vk
 
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
-                transform.applyRotation(rotation);
-
                 float aspect = swapchain->getAspectRatio();
-                cam.perspective(70.f, aspect, 0.01, 100);
-                
-                memcpy(cameraBuffer.mapped(), &cam.getProjection(), sizeof(glm::mat4));
 
+                eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
+                camTransform.applyRotation(glm::vec3(0.0f, 0.2f, 0.0f));
+
+                cam.perspective(70.f, aspect, 0.01, 100);
+    
+                globalData.projection = cam.getProjection();
+                globalData.view = cam.getView();
+                cameraBuffer.update(&globalData);
+                
                 vkCmdBindDescriptorSets(
                     cmd,                            
                     VK_PIPELINE_BIND_POINT_GRAPHICS,   

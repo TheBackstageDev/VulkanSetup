@@ -6,9 +6,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/constants.hpp>
+#include "transform_t.hpp"
 
 #include <vma/vk_mem_alloc.h>
 #include "vk/vk_buffer.hpp"
@@ -17,31 +15,6 @@
 
 namespace eng
 {
-    struct transform_t
-    {
-        glm::vec3 translation{0.0f};
-        glm::vec3 scale{0.5f};
-        glm::quat rotation;
-
-        void applyRotation(glm::vec3 eulerDegreesDelta)
-        {
-            glm::vec3 radians = glm::radians(eulerDegreesDelta);
-            glm::quat deltaRotation = glm::quat(radians);
-
-            rotation = glm::normalize(deltaRotation * rotation);
-        }
-
-
-        void rotateEuler(glm::vec3 angles)
-        {
-            rotation = glm::normalize(glm::quat(glm::radians(angles)));
-        }
-
-        glm::vec3 getRotationEuler() { return glm::degrees(glm::eulerAngles(rotation)); }
-
-        glm::mat4 mat4();
-    };
-
     class model_t
     {
     public:

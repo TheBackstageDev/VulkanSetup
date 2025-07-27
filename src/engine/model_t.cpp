@@ -42,19 +42,6 @@ namespace eng
         return attributeDescriptions;
     }
 
-    // Transform
-
-    glm::mat4 transform_t::mat4()
-    {
-        glm::mat4 matrix(1.0f);
-
-        glm::mat4 scaleMatrix = glm::scale(matrix, scale);
-        glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
-        glm::mat4 translationMatrix = glm::translate(matrix, translation);
-
-        return translationMatrix * rotationMatrix * scaleMatrix;
-    }
-
     // Model
 
     model_t::model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices, std::unique_ptr<vk::vk_device>& device)
