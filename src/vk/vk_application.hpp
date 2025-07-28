@@ -7,6 +7,8 @@
 #include "vk_pipeline.hpp"
 #include "vk_renderer.hpp"
 
+#include "core/input.hpp"
+
 #include <memory>
 
 namespace vk

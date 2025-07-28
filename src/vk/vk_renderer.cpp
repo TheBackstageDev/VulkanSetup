@@ -17,6 +17,7 @@ namespace vk
 
     vk_renderer::~vk_renderer()
     {
+        vkDeviceWaitIdle(device->device());
         freeCommandBuffers();
     }
 

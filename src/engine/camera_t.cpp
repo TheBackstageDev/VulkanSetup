@@ -37,12 +37,6 @@ namespace eng
         const transform_t& transform = _scene.get<eng::transform_t>(_id);
         setViewYXZ(transform.translation, transform.rotation);
     }
-    void camera_t::setViewDirection(glm::vec3 translation, glm::quat dir, glm::vec3 up)
-    {
-        glm::vec3 forward = dir * glm::vec3(0.0f, 0.0f, -1.0f);
-        glm::vec3 camUp = dir * up;
-        view = glm::lookAt(translation, translation + forward, camUp);
-    }
 
     void camera_t::lookAt(glm::vec3 target, glm::vec3 up)
     {
@@ -51,7 +45,10 @@ namespace eng
         
         transform.applyRotation(direction);
 
-        setViewDirection(target - transform.translation, up);
+        glm::vec3 forward = transform.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+        glm::vec3 camUp = transform.rotation * up;
+        
+        view = glm::lookAt(transform.translation, transform.translation + forward, camUp);
     }
 
     void camera_t::setViewYXZ(glm::vec3 translation, glm::quat rotation)

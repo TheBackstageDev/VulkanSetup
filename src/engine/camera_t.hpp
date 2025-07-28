@@ -25,7 +25,6 @@ namespace eng
 
         ecs::entity_id_t getId() const { return _id; }
     private:
-        void setViewDirection(glm::vec3 translation, glm::quat dir, glm::vec3 up = {0.0f, -1.0f, 0.0f});
         void setViewYXZ(glm::vec3 translation, glm::quat direction);
 
         ecs::entity_id_t _id = ecs::null_entity_id;

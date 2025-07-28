@@ -34,6 +34,7 @@ namespace eng
             rotation = glm::normalize(glm::quat(glm::radians(angles)));
         }
 
+        glm::vec3 getForward() const { return glm::vec3{1.0f, 1.0f, 1.0f} ; }
         glm::vec3 getRotationEuler() const { return glm::eulerAngles(rotation); }
 
         glm::mat4 mat4()

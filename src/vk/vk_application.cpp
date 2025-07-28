@@ -31,10 +31,40 @@ namespace vk
 
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
         renderer = std::make_unique<vk_renderer>(pipeline, swapchain, device, context, window);
+
+        core::input::setWindow(window->window());
     }
 
     vk_application::~vk_application()
     {
+    }
+
+    void handleCamInput(eng::transform_t& camtransform)
+    {
+        if (core::input::isKey(core::input::key::KEY_W, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation.z += 0.1f;
+        }
+        if (core::input::isKey(core::input::key::KEY_S, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation.z -= 0.1f;
+        }
+        if (core::input::isKey(core::input::key::KEY_A, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation.x += 0.1f;
+        }
+        if (core::input::isKey(core::input::key::KEY_D, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation.x -= 0.1f;
+        }
+        if (core::input::isKey(core::input::key::KEY_Q, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.applyRotation(glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+        if (core::input::isKey(core::input::key::KEY_E, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.applyRotation(glm::vec3(0.0f, -1.0f, 0.0f));
+        }   
     }
     
     void vk_application::run()
@@ -146,10 +176,10 @@ namespace vk
             {
                 float aspect = swapchain->getAspectRatio();
 
-                eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
-                camTransform.applyRotation(glm::vec3(0.0f, 0.2f, 0.0f));
-
                 cam.perspective(70.f, aspect, 0.01, 100);
+
+                eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
+                handleCamInput(camTransform);
     
                 globalData.projection = cam.getProjection();
                 globalData.view = cam.getView();
