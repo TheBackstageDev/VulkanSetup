@@ -43,28 +43,36 @@ namespace vk
     {
         if (core::input::isKey(core::input::key::KEY_W, core::input::key_action::ACTION_PRESS))
         {
-            camtransform.translation.z += 0.1f;
+            camtransform.translation -= camtransform.forward() * 0.1f;
         }
         if (core::input::isKey(core::input::key::KEY_S, core::input::key_action::ACTION_PRESS))
         {
-            camtransform.translation.z -= 0.1f;
+            camtransform.translation += camtransform.forward() * 0.1f;
         }
         if (core::input::isKey(core::input::key::KEY_A, core::input::key_action::ACTION_PRESS))
         {
-            camtransform.translation.x += 0.1f;
+            camtransform.translation += camtransform.left() * 0.1f;
         }
         if (core::input::isKey(core::input::key::KEY_D, core::input::key_action::ACTION_PRESS))
         {
-            camtransform.translation.x -= 0.1f;
+            camtransform.translation -= camtransform.left() * 0.1f;
         }
-        if (core::input::isKey(core::input::key::KEY_Q, core::input::key_action::ACTION_PRESS))
+        if (core::input::isKey(core::input::key::KEY_LEFT, core::input::key_action::ACTION_PRESS))
         {
             camtransform.applyRotation(glm::vec3(0.0f, 1.0f, 0.0f));
         }
-        if (core::input::isKey(core::input::key::KEY_E, core::input::key_action::ACTION_PRESS))
+        if (core::input::isKey(core::input::key::KEY_RIGHT, core::input::key_action::ACTION_PRESS))
         {
             camtransform.applyRotation(glm::vec3(0.0f, -1.0f, 0.0f));
-        }   
+        }
+        if (core::input::isKey(core::input::key::KEY_E, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation -= camtransform.up() * 0.1f;
+        }
+        if (core::input::isKey(core::input::key::KEY_Q, core::input::key_action::ACTION_PRESS))
+        {
+            camtransform.translation += camtransform.up() * 0.1f;
+        }
     }
     
     void vk_application::run()
@@ -134,6 +142,15 @@ namespace vk
         ecs::entity_id_t id = scene.create();
         scene.construct<eng::model_t>(id, cube_vertices, cube_indices, device);
         scene.construct<eng::transform_t>(id);
+
+        {
+            ecs::entity_id_t id2 = scene.create();
+            scene.construct<eng::model_t>(id2, cube_vertices, cube_indices, device);
+            scene.construct<eng::transform_t>(id2);
+            eng::transform_t& transform = scene.get<eng::transform_t>(id2);
+            transform.translation = {2.0f, 0.0f, 0.0f};
+        }
+
         struct globalBuffer
         {
             alignas(16) glm::mat4 projection;
