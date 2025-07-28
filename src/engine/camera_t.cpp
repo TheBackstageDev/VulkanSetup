@@ -26,14 +26,20 @@ namespace eng
     void camera_t::perspective(float fovy, float aspect, float near, float far)
     {
         assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
-        const float tanHalfFovy = tan(fovy / 2.f);
-        projection = glm::mat4{0.0f};
-        projection[0][0] = 1.f / (aspect * tanHalfFovy);
-        projection[1][1] = 1.f / (tanHalfFovy);
-        projection[2][2] = far / (far - near);
-        projection[2][3] = 1.f;
-        projection[3][2] = -(far * near) / (far - near);
-        
+
+        if (fovy != _fovy)
+        {
+            _fovy = fovy;
+
+            const float tanHalfFovy = tan(fovy / 2.f);
+            projection = glm::mat4{0.0f};
+            projection[0][0] = 1.f / (aspect * tanHalfFovy);
+            projection[1][1] = 1.f / (tanHalfFovy);
+            projection[2][2] = far / (far - near);
+            projection[2][3] = 1.f;
+            projection[3][2] = -(far * near) / (far - near);
+        }
+
         const transform_t& transform = _scene.get<eng::transform_t>(_id);
         setViewYXZ(transform.translation, transform.rotation);
     }

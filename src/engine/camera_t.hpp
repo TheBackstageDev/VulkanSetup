@@ -16,7 +16,7 @@ namespace eng
         camera_t(ecs::scene_t<>& scene);
 
         void ortho(float left, float right, float top, float bottom, float near, float far);
-        void perspective(float fovy, float aspect, float near, float far);
+        void perspective(float fovy = 70.f, float aspect = 1.0f, float near = 0.1f, float far = 100.f);
 
         void lookAt(glm::vec3 target, glm::vec3 up = {0.0f, -1.0f, 0.0f});
 
@@ -26,6 +26,8 @@ namespace eng
         ecs::entity_id_t getId() const { return _id; }
     private:
         void setViewYXZ(glm::vec3 translation, glm::quat direction);
+
+        float _fovy = 0.0f;
 
         ecs::entity_id_t _id = ecs::null_entity_id;
         ecs::scene_t<>& _scene;

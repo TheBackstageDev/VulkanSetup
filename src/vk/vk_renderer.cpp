@@ -4,6 +4,8 @@
 
 namespace vk
 {
+    frameinfo_t vk_renderer::_info;
+
     vk_renderer::vk_renderer(
         std::unique_ptr<vk_pipeline>& pipeline, 
         std::shared_ptr<vk_swapchain>& swapchain, 
@@ -200,6 +202,7 @@ namespace vk
         beginRenderpass(cmd);
 
         isFrameRunning = true;
+        _info.cmd = cmd;
 
         return cmd;
     }
@@ -214,17 +217,18 @@ namespace vk
 
         swapchain->submitCommandBuffers(&cmd, &imageIndex);
 
+        _info.cmd = VK_NULL_HANDLE;
         isFrameRunning = false;
     }
 
-    void vk_renderer::renderScene(ecs::scene_t<>& scene)
+    void vk_renderer::renderScene()
     {
         assert(isFrameRunning && "Must have started the frame before rendering!");
         VkCommandBuffer cmd = currentCommandBuffer();
 
         pipeline->bind(cmd);
 
-        scene.for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
+        _info.scene->for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
         {
             transform.applyRotation(glm::vec3(0.0f, 0.5f, 0.6f)); 
 

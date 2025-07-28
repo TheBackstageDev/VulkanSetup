@@ -3,13 +3,14 @@
 #include <iostream>
 
 #include "engine/camera_t.hpp"
+#include <chrono>
 
 namespace vk
 {
     vk_application::vk_application()
     {
-        constexpr uint32_t width = 700;
-        constexpr uint32_t height = 500;
+        constexpr uint32_t width = 900;
+        constexpr uint32_t height = 700;
         const char* title = "Vulkan Engine";
 
         window = std::make_unique<vk_window>(width, height, title);
@@ -41,38 +42,38 @@ namespace vk
 
     void handleCamInput(eng::transform_t& camtransform)
     {
+        static float camSpeed = 200.0f;
+        float deltaTime = vk_renderer::dt(); // Store dt once
+
+        glm::vec3 movement(0.0f);
+        glm::vec3 rotation(0.0f);
+
         if (core::input::isKey(core::input::key::KEY_W, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation -= camtransform.forward() * 0.1f;
-        }
+            movement -= camtransform.forward() * camSpeed;
+
         if (core::input::isKey(core::input::key::KEY_S, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation += camtransform.forward() * 0.1f;
-        }
+            movement += camtransform.forward() * camSpeed;
+
         if (core::input::isKey(core::input::key::KEY_A, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation += camtransform.left() * 0.1f;
-        }
+            movement += camtransform.left() * camSpeed;
+
         if (core::input::isKey(core::input::key::KEY_D, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation -= camtransform.left() * 0.1f;
-        }
-        if (core::input::isKey(core::input::key::KEY_LEFT, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.applyRotation(glm::vec3(0.0f, 1.0f, 0.0f));
-        }
-        if (core::input::isKey(core::input::key::KEY_RIGHT, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.applyRotation(glm::vec3(0.0f, -1.0f, 0.0f));
-        }
+            movement -= camtransform.left() * camSpeed;
+
         if (core::input::isKey(core::input::key::KEY_E, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation -= camtransform.up() * 0.1f;
-        }
+            movement -= camtransform.up() * camSpeed;
+
         if (core::input::isKey(core::input::key::KEY_Q, core::input::key_action::ACTION_PRESS))
-        {
-            camtransform.translation += camtransform.up() * 0.1f;
-        }
+            movement += camtransform.up() * camSpeed;
+
+        if (core::input::isKey(core::input::key::KEY_LEFT, core::input::key_action::ACTION_PRESS))
+            rotation += glm::vec3(0.0f, camSpeed * 20.0f, 0.0f);
+
+        if (core::input::isKey(core::input::key::KEY_RIGHT, core::input::key_action::ACTION_PRESS))
+            rotation += glm::vec3(0.0f, -camSpeed * 20.0f, 0.0f);
+
+        camtransform.translation += movement * deltaTime;
+        camtransform.applyRotation(rotation * deltaTime);
     }
     
     void vk_application::run()
@@ -185,15 +186,17 @@ namespace vk
 
         std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
 
+        renderer->setScene(scene);
+
         while (!window->should_close())
         {
             glfwPollEvents();
 
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
-                float aspect = swapchain->getAspectRatio();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-                cam.perspective(70.f, aspect, 0.01, 100);
+                cam.perspective(70.f);
 
                 eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
                 handleCamInput(camTransform);
@@ -213,8 +216,11 @@ namespace vk
                     &cameraChannelInfo.second         
                 );
 
-                renderer->renderScene(scene);
+                renderer->renderScene();
                 renderer->endFrame(cmd);
+
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+                renderer->getFrameInfo().deltaTime = std::chrono::duration<double>(end - start).count();
             }
         }
 

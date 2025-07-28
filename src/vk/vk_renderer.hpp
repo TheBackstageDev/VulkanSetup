@@ -14,6 +14,14 @@ namespace vk
         glm::mat4 modelMatrix;
     };
 
+    struct frameinfo_t
+    {
+        VkCommandBuffer cmd = VK_NULL_HANDLE;
+        ecs::scene_t<>* scene = nullptr;
+
+        float deltaTime = 0.0f;
+    };
+
     class vk_renderer
     {
     public:
@@ -23,14 +31,19 @@ namespace vk
         VkCommandBuffer startFrame();
         void endFrame(VkCommandBuffer cmd);
 
-        void renderScene(ecs::scene_t<>& scene);
+        void setScene(ecs::scene_t<>& scene) { _info.scene = &scene; }
+        void renderScene();
 
+        static frameinfo_t& getFrameInfo() { return _info; }
+        static float dt() { return _info.deltaTime; }
     private:
         std::shared_ptr<vk_swapchain>& swapchain;
         std::unique_ptr<vk_device>& device;
         std::unique_ptr<vk_window>& window;
         std::unique_ptr<vk_pipeline>& pipeline;
         vk_context& context;
+
+        static frameinfo_t _info;
 
         VkCommandBuffer currentCommandBuffer() { return commandBuffers[imageIndex]; }
         void createCommandBuffers();
