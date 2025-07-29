@@ -80,34 +80,29 @@ namespace vk
     {
         ecs::scene_t<> scene;
 
-        struct globalBuffer
+        struct globalUbo
         {
-            alignas(16) glm::mat4 projection;
-            alignas(16) glm::mat4 view;
-        } globalData;
+            alignas(16) glm::mat4 projection{1.0f};
+            alignas(16) glm::mat4 view{1.0f};
+        } globalUbo;
 
         eng::camera_t cam{scene};
 
-        float aspect = swapchain->getAspectRatio();
-        cam.perspective(70.f, aspect, 0.01f, 100.f);
-        globalData.projection = cam.getProjection();
-        globalData.view = cam.getView();
-
-        vk::vk_buffer cameraBuffer(
+        vk::vk_buffer globalBuffer(
             device,
-            &globalData,
-            sizeof(globalData),
+            &globalUbo,
+            sizeof(globalUbo),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU
         );
 
-        VkDescriptorBufferInfo camInfo{};
-        camInfo.buffer = cameraBuffer.buffer();
-        camInfo.offset = 0;
-        camInfo.range = sizeof(globalData);
+        VkDescriptorBufferInfo globalInfo{};
+        globalInfo.buffer = globalBuffer.buffer();
+        globalInfo.offset = 0;
+        globalInfo.range = sizeof(globalBuffer);
 
         vk_descriptordata camData{};
-        camData.pBufferInfo = &camInfo;
+        camData.pBufferInfo = &globalInfo;
 
         std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
         renderer->setScene(scene);
@@ -127,16 +122,16 @@ namespace vk
             {
                 std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-                cam.perspective(70.f);
+                cam.perspective(70.f, renderer->aspectRatio());
 
                 eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
                 handleCamInput(camTransform);
     
-                globalData.projection = cam.getProjection();
-                globalData.view = cam.getView();
+                globalUbo.projection = cam.getProjection();
+                globalUbo.view = cam.getView();
                 
-                cameraBuffer.update(&globalData);
-                cameraBuffer.bindUniform(cmd, pipeline->layout(), device, cameraChannelInfo);
+                globalBuffer.update(&globalUbo);
+                globalBuffer.bindUniform(cmd, pipeline->layout(), device, cameraChannelInfo);
 
                 renderer->renderScene();
                 renderer->endFrame(cmd);

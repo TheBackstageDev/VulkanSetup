@@ -27,9 +27,9 @@ namespace eng
     {
         assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
 
-        if (fovy != _fovy)
+        if (aspect != _aspect)
         {
-            _fovy = fovy;
+            _aspect = aspect;
 
             const float tanHalfFovy = tan(fovy / 2.f);
             projection = glm::mat4{0.0f};
@@ -37,7 +37,7 @@ namespace eng
             projection[1][1] = 1.f / (tanHalfFovy);
             projection[2][2] = far / (far - near);
             projection[2][3] = 1.f;
-            projection[3][2] = -(far * near) / (far - near);
+            projection[3][2] = -(far * near) / (far - near);    
         }
 
         const transform_t& transform = _scene.get<eng::transform_t>(_id);

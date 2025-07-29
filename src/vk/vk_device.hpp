@@ -49,6 +49,11 @@ namespace vk
 
         VkDescriptorSet& getDescriptorSet(uint32_t channelId) { return _sets[channelId]; }
         std::vector<VkDescriptorSetLayout> getSetLayouts() const { return _setLayouts; }
+
+        VkCommandBuffer beginSingleTimeCommands();
+        void endSingleTimeCommands(VkCommandBuffer cmd);
+
+        static VkPhysicalDeviceLimits limits() { return _properties.limits; }
     private:
         friend vk_resourcechannel;
 
@@ -85,7 +90,7 @@ namespace vk
 
         std::vector<vk_resourcechannel> _channels;
 
-        VkPhysicalDeviceProperties _properties; 
+        static VkPhysicalDeviceProperties _properties; 
 
         std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
     };

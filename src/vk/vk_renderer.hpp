@@ -33,6 +33,8 @@ namespace vk
 
         void setScene(ecs::scene_t<>& scene) { _info.scene = &scene; }
         void renderScene();
+        
+        float aspectRatio() { return swapchain->getAspectRatio(); }
 
         static frameinfo_t& getFrameInfo() { return _info; }
         static float dt() { return _info.deltaTime; }

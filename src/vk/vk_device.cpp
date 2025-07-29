@@ -5,6 +5,8 @@
 
 namespace vk
 {
+    VkPhysicalDeviceProperties vk_device::_properties;
+    
     vk_device::vk_device(vk_context& context)
         : context(context)
     {
@@ -106,8 +108,7 @@ namespace vk
         vkGetDeviceQueue(_device, _queueFamilies.presentFamily.value(), 0, &_presentQueue);
 
         volkLoadDevice(_device);
-
-        context.setDeviceHandle(_device);
+        context.device = _device;
     }
 
     void vk_device::createAllocator(vk_context& context)
@@ -123,7 +124,7 @@ namespace vk
         info.instance = context.vk_instance();
         info.pVulkanFunctions = &vkFuncs;
 
-        if (vmaCreateAllocator(&info, &context.vk_allocator()) != VK_SUCCESS) {
+        if (vmaCreateAllocator(&info, &context.allocator) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create VMA allocator");
         }
     }

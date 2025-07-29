@@ -8,7 +8,12 @@
 namespace vk
 {
     VmaAllocator vk_context::allocator = nullptr;
-    
+    VkDevice vk_context::device = VK_NULL_HANDLE;
+    VkCommandPool vk_context::commandPool = VK_NULL_HANDLE;
+
+    VkQueue vk_context::graphicsQueue = VK_NULL_HANDLE;
+    VkQueue vk_context::presentQueue = VK_NULL_HANDLE;    
+
     void vk_context::init(const vkContextCreateInfo info)
     {
         createInstance(info);
@@ -191,4 +196,45 @@ namespace vk
         }
     }
 
+    // others
+
+    VkCommandBuffer vk_context::beginSingleTimeCommand()
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = vk_context::commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer cmd;
+        if (vkAllocateCommandBuffers(device, &allocInfo, &cmd) != VK_SUCCESS)
+            throw std::runtime_error("Failed to allocate command buffer for single time commands");
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
+            throw std::runtime_error("Failed to begin single time command buffer");
+
+        return cmd;
+    }
+
+    void vk_context::endSingleTimeCommand(VkCommandBuffer cmd)
+    {
+        if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+            throw std::runtime_error("Failed to end single time command buffer");
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmd;
+
+        if (vkQueueSubmit(vk_context::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+            throw std::runtime_error("Failed to submit single time command buffer");
+
+        vkQueueWaitIdle(vk_context::graphicsQueue);
+
+        vkFreeCommandBuffers(vk_context::device, vk_context::commandPool, 1, &cmd);
+    }
 } // namespace vk

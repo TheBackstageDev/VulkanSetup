@@ -52,6 +52,9 @@ namespace vk
 
         float getAspectRatio() { return static_cast<float>(_extent.width) / static_cast<float>(_extent.height); }
 
+        static VkCommandBuffer beginSingleTimeCommands();
+        static void endSingleTimeCommands(VkCommandBuffer cmd);
+
     private:
         void createSwapchain();
         void createImageViews();
@@ -79,7 +82,6 @@ namespace vk
         std::vector<VkImageView> _depthImageViews;
         
         std::vector<VmaAllocation> _depthImagesAllocations;
-
         std::vector<FrameSync> _frameSync;
         std::vector<VkFence> _imagesInFlight;
 

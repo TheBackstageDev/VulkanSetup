@@ -15,18 +15,18 @@ namespace vk
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = memoryUsage;
 
-        vmaCreateBuffer(vk_context::vk_allocator(), &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr);
+        vmaCreateBuffer(vk_context::allocator, &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr);
 
         if (memoryUsage == VMA_MEMORY_USAGE_CPU_ONLY || memoryUsage == VMA_MEMORY_USAGE_CPU_TO_GPU)
         {
-            vmaMapMemory(vk_context::vk_allocator(), _allocation, &_mapped);
+            vmaMapMemory(vk_context::allocator, _allocation, &_mapped);
             memcpy(_mapped, data, static_cast<size_t>(size));
-            vmaUnmapMemory(vk_context::vk_allocator(), _allocation);
+            vmaUnmapMemory(vk_context::allocator, _allocation);
         }
     }
 
     vk_buffer::~vk_buffer()
     {
-        vmaDestroyBuffer(vk_context::vk_allocator(), _buffer, _allocation);
+        vmaDestroyBuffer(vk_context::allocator, _buffer, _allocation);
     }
 } // namespace vk

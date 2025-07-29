@@ -39,7 +39,7 @@ namespace vk
 
             if (_depthImages[i] != VK_NULL_HANDLE && _depthImagesAllocations[i] != nullptr)
             {
-                vmaDestroyImage(_context.vk_allocator(), _depthImages[i], _depthImagesAllocations[i]);
+                vmaDestroyImage(_context.allocator, _depthImages[i], _depthImagesAllocations[i]);
             }
         }
 
@@ -180,6 +180,8 @@ namespace vk
 
         if (vkCreateCommandPool(_device->device(), &info, nullptr, &_commandPool) != VK_SUCCESS)
             throw std::runtime_error("Failed to create command pool!");
+
+        _context.commandPool = _commandPool;
     }
 
     void vk_swapchain::createImageViews()
@@ -239,7 +241,7 @@ namespace vk
             allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
             allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            if (vmaCreateImage(_context.vk_allocator(), &imageInfo, &allocInfo, &_depthImages[i], &_depthImagesAllocations[i], nullptr) != VK_SUCCESS)
+            if (vmaCreateImage(_context.allocator, &imageInfo, &allocInfo, &_depthImages[i], &_depthImagesAllocations[i], nullptr) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create depth image");
 
             VkImageViewCreateInfo viewInfo{};
