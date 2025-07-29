@@ -24,12 +24,16 @@ namespace eng
             glm::vec3 color;
             glm::vec3 normal;
             glm::vec2 uv;
+            glm::vec3 tangent;
 
             static VkVertexInputBindingDescription getBindingDescription();
-            static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
+            static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions();
         };
 
-        model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices, std::unique_ptr<vk::vk_device>& device);
+        using index_t = uint32_t;
+
+        model_t() = default;
+        model_t(std::vector<vertex_t>& vertices, std::vector<index_t>& indices, std::unique_ptr<vk::vk_device>& device);
         ~model_t();
 
         void bind(VkCommandBuffer cmd);
@@ -39,7 +43,7 @@ namespace eng
         void createIndexBuffer(std::unique_ptr<vk::vk_device>& device);
 
         std::vector<vertex_t> vertices;
-        std::vector<uint32_t> indices;
+        std::vector<index_t> indices;
 
         std::shared_ptr<vk::vk_buffer> _vertexBuffer;
         std::shared_ptr<vk::vk_buffer> _indexBuffer;

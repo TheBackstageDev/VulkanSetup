@@ -19,6 +19,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     include/glfw/include
     include/glm/
     include/stb/
+    include/assimp/
     "$ENV{VULKAN_SDK}/Include"
 )
 
@@ -26,6 +27,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     volk::volk
     glfw
     imgui
+    assimp
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./${CMAKE_SOURCE_DIR})

@@ -82,6 +82,14 @@
         "queue": "cpp",
         "ranges": "cpp",
         "semaphore": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "forward_list": "cpp",
+        "random": "cpp",
+        "regex": "cpp",
+        "stack": "cpp",
+        "variant": "cpp"
     }
 }

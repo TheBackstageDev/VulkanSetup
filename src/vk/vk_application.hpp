@@ -7,6 +7,7 @@
 #include "vk_pipeline.hpp"
 #include "vk_renderer.hpp"
 
+#include "engine/modelloader_t.hpp"
 #include "core/input.hpp"
 
 #include <memory>
