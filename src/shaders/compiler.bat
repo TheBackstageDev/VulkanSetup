@@ -41,4 +41,3 @@ for /r "%SHADER_DIR%" %%f in (*.frag) do (
 )
 
 echo All shaders compiled successfully!
-exit /b 0

@@ -228,17 +228,28 @@ namespace vk
 
         pipeline->bind(cmd);
 
+        vkCmdBindDescriptorSets(
+            cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipeline->layout(),
+            1,
+            1,
+            &device->getDescriptorSet(1),
+            0,
+            nullptr
+        );
+
         _info.scene->for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
         {
-            pcModelMatrix modelMatrix = { transform.mat4() };
+            pcPush push = { transform.mat4(), _info.scene->get<eng::texture_t>(id).id };
 
             vkCmdPushConstants(
                 cmd,
                 pipeline->layout(),
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 0,
-                sizeof(modelMatrix),
-                &modelMatrix
+                sizeof(push),
+                &push
             );
 
             model.bind(cmd);

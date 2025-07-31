@@ -3,8 +3,10 @@
 #include <string>
 
 #define NOMINMAX
-#include <volk/volk.h>
-#include <vk_mem_alloc.h>
+
+#include "vk/vk_context.hpp"
+#include "vk/vk_device.hpp"
+#include "vk/vk_buffer.hpp"
 
 namespace core
 {
@@ -18,17 +20,18 @@ namespace core
         VkImageView view = VK_NULL_HANDLE;
         VkSampler sampler = VK_NULL_HANDLE;
         VkFormat format = VK_FORMAT_UNDEFINED;
-        VmaAllocation allocation;
+        VmaAllocation allocation = VK_NULL_HANDLE;
     };
     
     class imageloader_t
     {
     public:
-        static void loadImage(const std::string& path, image_t* pImage);
+        static void loadImage(const std::string& path, image_t* pImage, std::unique_ptr<vk::vk_device>& device);
     private:
-        static void createImage(image_t* image, VmaAllocator allocator);
-        static void createImageView(image_t* image, VkDevice device);
-        static VkSampler createSampler(VkDevice device, VkFilter filter, VkSamplerAddressMode addressMode);
+        static void createImage(image_t* image);
+        static void createImageView(image_t* image);
+        static VkSampler createSampler(VkFilter filter, VkSamplerAddressMode addressMode);
         static void createMipMaps(image_t* image);
+        static void transitionImageLayout(image_t* image, VkImageLayout oldLayout, VkImageLayout newLayout);
     };
 } // namespace core

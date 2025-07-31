@@ -102,9 +102,25 @@ namespace vk
         globalInfo.range = sizeof(globalBuffer);
 
         vk_descriptordata camData{};
+        camData.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         camData.pBufferInfo = &globalInfo;
-
+        
         std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
+
+        core::image_t defaultImage;
+        core::imageloader_t::loadImage("src/resource/textures/statue.png", &defaultImage, device);
+
+        VkDescriptorImageInfo textureInfo{};
+        textureInfo.sampler = defaultImage.sampler;
+        textureInfo.imageView = defaultImage.view;
+        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        
+        vk_descriptordata texData{};
+        texData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texData.pImageInfo = &textureInfo;
+
+        std::pair<uint32_t, uint32_t> textureChannelInfo = device->setDescriptorData(texData);
+
         renderer->setScene(scene);
 
         eng::model_t model;
@@ -113,6 +129,7 @@ namespace vk
         ecs::entity_id_t modelId = scene.create();
         scene.construct<eng::transform_t>(modelId).translation = {0.0f, 0.0f, 0.0f};
         scene.construct<eng::model_t>(modelId) = model;
+        scene.construct<eng::texture_t>(modelId).id = textureChannelInfo.second;
 
         while (!window->should_close())
         {
@@ -137,7 +154,9 @@ namespace vk
                 renderer->endFrame(cmd);
 
                 std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-                renderer->getFrameInfo().deltaTime = std::chrono::duration<double>(end - start).count();
+
+                auto& info = renderer->getFrameInfo();
+                info.deltaTime = std::chrono::duration<double>(end - start).count();
             }
         }
 

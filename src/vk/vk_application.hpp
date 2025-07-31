@@ -9,6 +9,7 @@
 
 #include "engine/modelloader_t.hpp"
 #include "core/input.hpp"
+#include "core/imageloader.hpp"
 
 #include <memory>
 

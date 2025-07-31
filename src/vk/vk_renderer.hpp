@@ -9,9 +9,10 @@
 
 namespace vk
 {
-    struct pcModelMatrix
+    struct pcPush
     {
-        glm::mat4 modelMatrix;
+        alignas(16) glm::mat4 modelMatrix;
+        alignas(16) uint32_t textureId = 0;
     };
 
     struct frameinfo_t

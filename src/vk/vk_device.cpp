@@ -78,9 +78,13 @@ namespace vk
         bdaFeatures.bufferDeviceAddressMultiDevice = VK_FALSE;   // optional
 
         VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+        indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
         indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-        indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
         indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+        indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        indexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+        indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        indexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
         indexingFeatures.pNext = &bdaFeatures;
         
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
@@ -106,6 +110,9 @@ namespace vk
 
         vkGetDeviceQueue(_device, _queueFamilies.graphicsFamily.value(), 0, &_graphicsQueue);
         vkGetDeviceQueue(_device, _queueFamilies.presentFamily.value(), 0, &_presentQueue);
+
+        vk::vk_context::graphicsQueue = _graphicsQueue;
+        vk::vk_context::presentQueue = _presentQueue;
 
         volkLoadDevice(_device);
         context.device = _device;
@@ -196,7 +203,7 @@ namespace vk
         uniformPoolInfo.maxSets = numUniform;
         uniformPoolInfo.poolSizeCount = 1;
         uniformPoolInfo.pPoolSizes = &uniformSize;
-        uniformPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        uniformPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
         VkDescriptorPoolSize SSBOSizes[] = {
             {
@@ -211,10 +218,10 @@ namespace vk
 
         VkDescriptorPoolCreateInfo ssboPoolInfo{};
         ssboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        ssboPoolInfo.maxSets = numSSBO;
+        ssboPoolInfo.maxSets = numSSBO + numCombinedImageSampler;
         ssboPoolInfo.poolSizeCount = 2;
         ssboPoolInfo.pPoolSizes = SSBOSizes;
-        ssboPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        ssboPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
         if (vkCreateDescriptorPool(_device, &uniformPoolInfo, nullptr, &_uniformDescriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create uniform descriptor pool");
@@ -227,16 +234,24 @@ namespace vk
 
     void vk_device::allocateSets()
     {
-        _sets.resize(numUniform + numSSBO, VK_NULL_HANDLE);
-        _setLayouts.resize(numUniform + numSSBO, VK_NULL_HANDLE);
+        _sets.resize(numChannels, VK_NULL_HANDLE);
+        _setLayouts.resize(numChannels, VK_NULL_HANDLE);
 
-        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        for (int32_t i = 0; i < numChannels; ++i)
         {
             VkDescriptorSetLayoutBinding binding{};
             binding.binding = 0;
             binding.descriptorCount = 1;
-            binding.descriptorType = (i < numUniform) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            if (i < numUniform) {
+                binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            } else if (i < numUniform + numSSBO) {
+                binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            } else {
+                binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            }
+            binding.stageFlags = i < numChannels - numCombinedImageSampler 
+                ? VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
             binding.pImmutableSamplers = nullptr;
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -250,7 +265,7 @@ namespace vk
             }
         }
 
-        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        for (int32_t i = 0; i < numChannels; ++i)
         {
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -267,19 +282,21 @@ namespace vk
 
     void vk_device::createResourceChannels(vk_context& context)
     {
-        _channels.reserve(numUniform + numSSBO);
+        _channels.reserve(numChannels);
 
-        for (int32_t i = 0; i < numUniform + numSSBO; ++i)
+        for (int32_t i = 0; i < numChannels ; ++i)
         {
+            VkDescriptorType type = (i < numUniform) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : 
+                                    (i < numUniform + numSSBO) ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : 
+                                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
             vk_resourcechannel channel{
                 *this,
                 static_cast<uint32_t>(i),
                 (i < numUniform)
                     ? _properties.limits.maxDescriptorSetUniformBuffers
                     : _properties.limits.maxPerStageDescriptorStorageBuffers,
-                (i < numUniform)
-                    ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-                    : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+                type
             };
 
             _channels.push_back(std::move(channel));
@@ -301,8 +318,23 @@ namespace vk
         uint32_t channelId = 0;
         uint32_t newIndex = 0;
 
-        int32_t start = data.pBufferInfo ? 0 : numUniform;
-        int32_t end = data.pBufferInfo ? numUniform : numUniform + numSSBO;
+        int32_t start, end;
+
+        if (data.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        {
+            start = 0;
+            end = numUniform;
+        }
+        else if (data.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        {
+            start = numUniform;
+            end = numUniform + numSSBO;
+        }
+        else // VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+        {
+            start = numUniform + numSSBO;
+            end = numChannels;
+        }
 
         for (int32_t i = start; i < end; ++i)
         {
@@ -370,7 +402,7 @@ namespace vk
         if (_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || 
             _type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
             write.pBufferInfo = data.pBufferInfo;
-        } else {
+        } else /* VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER */ {
             write.pImageInfo = data.pImageInfo;
         }
 

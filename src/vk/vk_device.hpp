@@ -20,6 +20,8 @@ namespace vk
 
     struct vk_descriptordata
     {
+        VkDescriptorType type;
+        
         union {
             VkDescriptorBufferInfo* pBufferInfo;
             VkDescriptorImageInfo* pImageInfo;
@@ -79,8 +81,10 @@ namespace vk
 
         QueueFamilyIndices _queueFamilies;
 
-        uint32_t numUniform = 2;
-        uint32_t numSSBO = 1;
+        const uint32_t numUniform = 1;
+        const uint32_t numSSBO = 0;
+        const uint32_t numCombinedImageSampler = 1;
+        const uint32_t numChannels = numUniform + numSSBO + numCombinedImageSampler;
 
         VkDescriptorPool _uniformDescriptorPool;
         VkDescriptorPool _SSBOdescriptorPool;
@@ -92,7 +96,9 @@ namespace vk
 
         static VkPhysicalDeviceProperties _properties; 
 
-        std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+        std::vector<const char*> device_extensions = 
+            {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME,
+             VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
     };
 
     class vk_resourcechannel

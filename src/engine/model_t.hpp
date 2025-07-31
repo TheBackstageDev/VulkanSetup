@@ -12,9 +12,15 @@
 #include "vk/vk_buffer.hpp"
 
 #include <array>
+#include "core/imageloader.hpp"
 
 namespace eng
 {
+    struct texture_t
+    {
+        uint32_t id = UINT32_MAX;
+    };
+
     class model_t
     {
     public:

@@ -202,7 +202,7 @@ namespace vk
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = vk_context::commandPool;
+        allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = 1;
 
@@ -230,11 +230,11 @@ namespace vk
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &cmd;
 
-        if (vkQueueSubmit(vk_context::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
             throw std::runtime_error("Failed to submit single time command buffer");
 
-        vkQueueWaitIdle(vk_context::graphicsQueue);
+        vkQueueWaitIdle(graphicsQueue);
 
-        vkFreeCommandBuffers(vk_context::device, vk_context::commandPool, 1, &cmd);
+        vkFreeCommandBuffers(device, commandPool, 1, &cmd);
     }
 } // namespace vk
