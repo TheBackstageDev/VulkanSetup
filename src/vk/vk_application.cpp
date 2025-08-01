@@ -34,10 +34,83 @@ namespace vk
         renderer = std::make_unique<vk_renderer>(pipeline, swapchain, device, context, window);
 
         core::input::setWindow(window->window());
+
+        initImgui(pipelineInfo.pipelineRenderingInfo);
     }
 
     vk_application::~vk_application()
     {
+        vkDeviceWaitIdle(device->device());
+
+        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplVulkan_Shutdown();
+        ImGui::DestroyContext();
+
+        vkDestroyDescriptorPool(device->device(), imguiPool, nullptr);
+    }
+
+    void vk_application::initImgui(VkPipelineRenderingCreateInfo& pipelineRenderingInfo)
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; 
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; 
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+        ImGui::StyleColorsDark();
+
+        VkDescriptorPoolCreateInfo imguiPoolCreateInfo{};
+        imguiPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        imguiPoolCreateInfo.maxSets = 1000;
+
+        VkDescriptorPoolSize poolSizes[] =
+        {
+            { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+        };
+
+        imguiPoolCreateInfo.poolSizeCount = IM_ARRAYSIZE(poolSizes);
+        imguiPoolCreateInfo.pPoolSizes = poolSizes;
+        imguiPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT; 
+
+        if (vkCreateDescriptorPool(device->device(), &imguiPoolCreateInfo, nullptr, &imguiPool) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Unable to create imgui descriptor pool!");
+        }
+                
+        ImGui_ImplVulkan_InitInfo initInfo{};
+        initInfo.Instance = context.vk_instance();
+        initInfo.PhysicalDevice = device->phydevice();
+        initInfo.Device = device->device();
+        initInfo.QueueFamily = device->graphicsFamily();
+        initInfo.Queue = device->graphicsQueue();
+        initInfo.PipelineRenderingCreateInfo = pipelineRenderingInfo;
+        initInfo.PipelineCache = VK_NULL_HANDLE;
+        initInfo.DescriptorPool = imguiPool;
+        initInfo.MinImageCount = swapchain->imageAmmount();
+        initInfo.ImageCount = swapchain->imageAmmount();
+        initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.UseDynamicRendering = true;
+
+        ImGui_ImplVulkan_LoadFunctions(
+            VK_API_VERSION_1_3,
+            [](const char* function_name, void* user_data) -> PFN_vkVoidFunction {
+                return glfwGetInstanceProcAddress(static_cast<VkInstance>(user_data), function_name);
+            }
+        );
+
+        ImGui_ImplGlfw_InitForVulkan(window->window(), true);
+        ImGui_ImplVulkan_Init(&initInfo);
     }
 
     void handleCamInput(eng::transform_t& camtransform)
@@ -108,7 +181,7 @@ namespace vk
         std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
 
         core::image_t defaultImage;
-        core::imageloader_t::loadImage("src/resource/textures/statue.png", &defaultImage, device);
+        core::imageloader_t::loadImage("src/resource/textures/default.png", &defaultImage, device);
 
         VkDescriptorImageInfo textureInfo{};
         textureInfo.sampler = defaultImage.sampler;
@@ -129,7 +202,7 @@ namespace vk
         ecs::entity_id_t modelId = scene.create();
         scene.construct<eng::transform_t>(modelId).translation = {0.0f, 0.0f, 0.0f};
         scene.construct<eng::model_t>(modelId) = model;
-        scene.construct<eng::texture_t>(modelId).id = textureChannelInfo.second;
+        scene.construct<eng::texture_t>(modelId) = {textureChannelInfo.second, textureChannelInfo.first};
 
         while (!window->should_close())
         {
@@ -137,6 +210,11 @@ namespace vk
 
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
+                auto& info = renderer->getFrameInfo();
+                info.channelIndices = device->getChannelInfo();
+
+                ImGui::ShowDemoWindow(nullptr);
+
                 std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
                 cam.perspective(70.f, renderer->aspectRatio());
@@ -155,7 +233,6 @@ namespace vk
 
                 std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
-                auto& info = renderer->getFrameInfo();
                 info.deltaTime = std::chrono::duration<double>(end - start).count();
             }
         }

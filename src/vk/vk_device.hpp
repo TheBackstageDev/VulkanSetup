@@ -28,6 +28,13 @@ namespace vk
         }; 
     };
 
+    struct vk_channelinfo
+    {
+        std::vector<uint32_t> uniformIndices;
+        std::vector<uint32_t> SSBOIndices;
+        std::vector<uint32_t> combinedImageSamplerIndices;
+    };
+
     class vk_resourcechannel;
 
     class vk_device
@@ -56,6 +63,31 @@ namespace vk
         void endSingleTimeCommands(VkCommandBuffer cmd);
 
         static VkPhysicalDeviceLimits limits() { return _properties.limits; }
+
+        constexpr vk_channelinfo getChannelInfo() {
+            vk_channelinfo channelInfo;
+            channelInfo.uniformIndices.reserve(numUniform);
+            channelInfo.SSBOIndices.reserve(numSSBO);
+            channelInfo.combinedImageSamplerIndices.reserve(numCombinedImageSampler);
+
+            for (uint32_t i = 0; i < numChannels; ++i)
+            {
+                if (i < numUniform)
+                {
+                    channelInfo.uniformIndices.push_back(i);
+                }
+                else if (i < numUniform + numSSBO)
+                {
+                    channelInfo.SSBOIndices.push_back(i);
+                }
+                else
+                {
+                    channelInfo.combinedImageSamplerIndices.push_back(i);
+                }
+            }
+
+            return channelInfo;
+        }
     private:
         friend vk_resourcechannel;
 
@@ -64,11 +96,9 @@ namespace vk
         void createAllocator(vk_context& context);
         void createDescriptorPools(vk_context& context); 
         void createResourceChannels(vk_context& context);
-
         void allocateSets();
 
         bool isDeviceSuitable(VkPhysicalDevice& device, vk_context& context);
-
         QueueFamilyIndices findQueueFamilies(vk_context& context);
 
         VkDevice _device = VK_NULL_HANDLE;
@@ -115,11 +145,11 @@ namespace vk
 
         size_t getSize() { return _maxIndices; }
         uint32_t getIndex() { return _index; }
+
+        const VkDescriptorType _type;
     private:
         uint32_t _channelId = -1;
         uint32_t _index = -1;
-
-        VkDescriptorType _type;
 
         const size_t _maxIndices = 0;
         size_t _countIndices = 0;

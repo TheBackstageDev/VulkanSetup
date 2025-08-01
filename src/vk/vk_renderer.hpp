@@ -1,6 +1,11 @@
 #pragma once
 
 #include <volk/volk.h>
+
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+
 #include "vk_swapchain.hpp"
 #include "vk_pipeline.hpp"
 
@@ -21,6 +26,8 @@ namespace vk
         ecs::scene_t<>* scene = nullptr;
 
         float deltaTime = 0.0f;
+
+        vk_channelinfo channelIndices;
     };
 
     class vk_renderer
@@ -34,6 +41,7 @@ namespace vk
 
         void setScene(ecs::scene_t<>& scene) { _info.scene = &scene; }
         void renderScene();
+        void renderInterface();
         
         float aspectRatio() { return swapchain->getAspectRatio(); }
 

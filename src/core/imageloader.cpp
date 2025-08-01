@@ -64,7 +64,7 @@ namespace core
 
         stbi_image_free(pixels);
 
-        //createMipMaps(pImage);
+        createMipMaps(pImage);
     }
 
     void imageloader_t::transitionImageLayout(image_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)

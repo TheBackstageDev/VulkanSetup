@@ -1,5 +1,9 @@
 #pragma once
 
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+
 #include "vk_window.hpp"
 #include "vk_context.hpp"
 #include "vk_device.hpp"
@@ -23,6 +27,10 @@ namespace vk
 
         void run();
     private:
+        void initImgui(VkPipelineRenderingCreateInfo& pipelineRenderingInfo);
+
+        VkDescriptorPool imguiPool;
+
         vk_context context;
 
         std::unique_ptr<vk_window> window;

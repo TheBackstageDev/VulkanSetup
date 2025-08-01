@@ -19,6 +19,7 @@ namespace eng
     struct texture_t
     {
         uint32_t id = UINT32_MAX;
+        uint32_t channelId = UINT32_MAX;
     };
 
     class model_t

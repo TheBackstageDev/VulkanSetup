@@ -8,7 +8,10 @@ add_subdirectory(include)
 find_package(Vulkan REQUIRED)
 file(GLOB_RECURSE SRC_FILES src/*.cpp src/*.hpp)
 
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+file(GLOB IMGUI_CORE_FILES ${CMAKE_SOURCE_DIR}/include/imgui/*.cpp ${CMAKE_SOURCE_DIR}/include/imgui/*.h)
+file(GLOB IMGUI_BACKEND_FILES ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_glfw.cpp ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_vulkan.cpp)
+
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${IMGUI_CORE_FILES} ${IMGUI_BACKEND_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     src/
@@ -16,23 +19,26 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     include/vma/
     include/volk/
     include/vulkan/
-    include/glfw/include
+    include/glfw/include/
     include/glm/
     include/stb/
     include/assimp/
+    include/imgui/
     "$ENV{VULKAN_SDK}/Include"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     volk::volk
     glfw
-    imgui
     assimp
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./${CMAKE_SOURCE_DIR})
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE VK_NO_PROTOTYPES)
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    VK_NO_PROTOTYPES
+    IMGUI_IMPL_VULKAN_NO_PROTOTYPES
+)
 
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD

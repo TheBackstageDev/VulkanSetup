@@ -203,6 +203,10 @@ namespace vk
 
         isFrameRunning = true;
         _info.cmd = cmd;
+        
+        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplVulkan_NewFrame();
+        ImGui::NewFrame();
 
         return cmd;
     }
@@ -210,6 +214,9 @@ namespace vk
     void vk_renderer::endFrame(VkCommandBuffer cmd)
     {
         assert(isFrameRunning && "Must have started the frame before ending it!");
+
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
         endRenderpass(cmd);
         if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
@@ -228,17 +235,20 @@ namespace vk
 
         pipeline->bind(cmd);
 
-        vkCmdBindDescriptorSets(
-            cmd,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipeline->layout(),
-            1,
-            1,
-            &device->getDescriptorSet(1),
-            0,
-            nullptr
-        );
-
+        for (const uint32_t& index : _info.channelIndices.combinedImageSamplerIndices)
+        {
+            vkCmdBindDescriptorSets(
+                cmd,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline->layout(),
+                index,
+                1,
+                &device->getDescriptorSet(index),
+                0,
+                nullptr
+            );
+        }
+        
         _info.scene->for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
         {
             pcPush push = { transform.mat4(), _info.scene->get<eng::texture_t>(id).id };
