@@ -36,6 +36,7 @@ namespace vk
         core::input::setWindow(window->window());
 
         initImgui(pipelineInfo.pipelineRenderingInfo);
+        setupBuffers();
     }
 
     vk_application::~vk_application()
@@ -49,6 +50,46 @@ namespace vk
         vkDestroyDescriptorPool(device->device(), imguiPool, nullptr);
     }
 
+    void vk_application::setupBuffers()
+    {
+        globalUbo defaultGlobalUbo{};
+        defaultGlobalUbo.projection = glm::mat4(1.0f);
+        defaultGlobalUbo.view = glm::mat4(1.0f);
+
+        globalBuffer = std::make_unique<vk_buffer>(
+            device,
+            &defaultGlobalUbo,
+            sizeof(globalUbo),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU
+        );
+
+        VkDescriptorBufferInfo globalInfo{};
+        globalInfo.buffer = globalBuffer->buffer();
+        globalInfo.offset = 0;
+        globalInfo.range = sizeof(globalBuffer);
+
+        vk_descriptordata globalData{};
+        globalData.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        globalData.pBufferInfo = &globalInfo;
+
+        globaluboChannelInfo = device->setDescriptorData(globalData);
+        
+        core::image_t defaultImage;
+        core::imageloader_t::loadImage("src/resource/textures/default.png", &defaultImage, device);
+
+        VkDescriptorImageInfo textureInfo{};
+        textureInfo.sampler = defaultImage.sampler;
+        textureInfo.imageView = defaultImage.view;
+        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        
+        vk_descriptordata texData{};
+        texData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texData.pImageInfo = &textureInfo;
+
+        std::pair<uint32_t, uint32_t> textureChannelInfo = device->setDescriptorData(texData);
+    }
+
     void vk_application::initImgui(VkPipelineRenderingCreateInfo& pipelineRenderingInfo)
     {
         IMGUI_CHECKVERSION();
@@ -58,7 +99,7 @@ namespace vk
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; 
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-        ImGui::StyleColorsDark();
+        ImGui::StyleColorsDark(&ImGui::GetStyle());
 
         VkDescriptorPoolCreateInfo imguiPoolCreateInfo{};
         imguiPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -104,7 +145,8 @@ namespace vk
 
         ImGui_ImplVulkan_LoadFunctions(
             VK_API_VERSION_1_3,
-            [](const char* function_name, void* user_data) -> PFN_vkVoidFunction {
+            [](const char* function_name, void* user_data) -> PFN_vkVoidFunction 
+            {
                 return glfwGetInstanceProcAddress(static_cast<VkInstance>(user_data), function_name);
             }
         );
@@ -152,48 +194,8 @@ namespace vk
     void vk_application::run()
     {
         ecs::scene_t<> scene;
-
-        struct globalUbo
-        {
-            alignas(16) glm::mat4 projection{1.0f};
-            alignas(16) glm::mat4 view{1.0f};
-        } globalUbo;
-
+    
         eng::camera_t cam{scene};
-
-        vk::vk_buffer globalBuffer(
-            device,
-            &globalUbo,
-            sizeof(globalUbo),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU
-        );
-
-        VkDescriptorBufferInfo globalInfo{};
-        globalInfo.buffer = globalBuffer.buffer();
-        globalInfo.offset = 0;
-        globalInfo.range = sizeof(globalBuffer);
-
-        vk_descriptordata camData{};
-        camData.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        camData.pBufferInfo = &globalInfo;
-        
-        std::pair<uint32_t, uint32_t> cameraChannelInfo = device->setDescriptorData(camData);
-
-        core::image_t defaultImage;
-        core::imageloader_t::loadImage("src/resource/textures/default.png", &defaultImage, device);
-
-        VkDescriptorImageInfo textureInfo{};
-        textureInfo.sampler = defaultImage.sampler;
-        textureInfo.imageView = defaultImage.view;
-        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        
-        vk_descriptordata texData{};
-        texData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        texData.pImageInfo = &textureInfo;
-
-        std::pair<uint32_t, uint32_t> textureChannelInfo = device->setDescriptorData(texData);
-
         renderer->setScene(scene);
 
         eng::model_t model;
@@ -202,7 +204,9 @@ namespace vk
         ecs::entity_id_t modelId = scene.create();
         scene.construct<eng::transform_t>(modelId).translation = {0.0f, 0.0f, 0.0f};
         scene.construct<eng::model_t>(modelId) = model;
-        scene.construct<eng::texture_t>(modelId) = {textureChannelInfo.second, textureChannelInfo.first};
+        scene.construct<eng::texture_t>(modelId) = {defaultTextureChannelInfo.second, defaultTextureChannelInfo.first};
+
+        globalUbo globalubo{};
 
         while (!window->should_close())
         {
@@ -222,11 +226,11 @@ namespace vk
                 eng::transform_t& camTransform = scene.get<eng::transform_t>(cam.getId());
                 handleCamInput(camTransform);
     
-                globalUbo.projection = cam.getProjection();
-                globalUbo.view = cam.getView();
+                globalubo.projection = cam.getProjection();
+                globalubo.view = cam.getView();
                 
-                globalBuffer.update(&globalUbo);
-                globalBuffer.bindUniform(cmd, pipeline->layout(), device, cameraChannelInfo);
+                globalBuffer->update(&globalubo);
+                globalBuffer->bindUniform(cmd, pipeline->layout(), device, globaluboChannelInfo);
 
                 renderer->renderScene();
                 renderer->endFrame(cmd);

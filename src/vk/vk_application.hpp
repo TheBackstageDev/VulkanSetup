@@ -17,6 +17,12 @@
 
 #include <memory>
 
+struct globalUbo
+{
+    alignas(16) glm::mat4 projection{1.0f};
+    alignas(16) glm::mat4 view{1.0f};
+};
+
 namespace vk
 {
     class vk_application
@@ -28,10 +34,18 @@ namespace vk
         void run();
     private:
         void initImgui(VkPipelineRenderingCreateInfo& pipelineRenderingInfo);
+        void setupBuffers();
 
         VkDescriptorPool imguiPool;
 
         vk_context context;
+
+        std::unique_ptr<vk_buffer> globalBuffer;
+
+        // channel infos
+        std::pair<uint32_t, uint32_t> globaluboChannelInfo;
+        std::pair<uint32_t, uint32_t> defaultTextureChannelInfo;
+
 
         std::unique_ptr<vk_window> window;
         std::unique_ptr<vk_device> device;

@@ -44,6 +44,9 @@ namespace vk
         
         static VkQueue graphicsQueue;
         static VkQueue presentQueue;
+
+        static VkFormat imageFormat;
+        static VkFormat depthFormat;
     private:
         VkInstance instance;
         VkSurfaceKHR surface;
