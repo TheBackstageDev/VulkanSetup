@@ -1,56 +1,27 @@
 #pragma once
 
-#include <imgui/imgui.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <imgui/backends/imgui_impl_glfw.h>
-
-#include "vk_window.hpp"
-#include "vk_context.hpp"
-#include "vk_device.hpp"
-#include "vk_swapchain.hpp"
-#include "vk_pipeline.hpp"
-#include "vk_renderer.hpp"
-
-#include "engine/modelloader_t.hpp"
-#include "core/input.hpp"
-#include "core/imageloader.hpp"
-
+#include "vk_engine.hpp"
 #include <memory>
-
-struct globalUbo
-{
-    alignas(16) glm::mat4 projection{1.0f};
-    alignas(16) glm::mat4 view{1.0f};
-};
 
 namespace vk
 {
     class vk_application
     {
     public:
-        vk_application();
-        ~vk_application();
+        static vk_application& getInstance() {
+            static vk_application instance;
+            return instance;
+        }
 
-        void run();
+        void run() { _engine.runMainLoop(); }
+
+        vk_engine& getEngine() { return _engine; }
+
     private:
-        void initImgui(VkPipelineRenderingCreateInfo& pipelineRenderingInfo);
-        void setupBuffers();
+        vk_application() = default;
+        vk_application(const vk_application&) = delete;
+        vk_application& operator=(const vk_application&) = delete;
 
-        VkDescriptorPool imguiPool;
-
-        vk_context context;
-
-        std::unique_ptr<vk_buffer> globalBuffer;
-
-        // channel infos
-        std::pair<uint32_t, uint32_t> globaluboChannelInfo;
-        std::pair<uint32_t, uint32_t> defaultTextureChannelInfo;
-
-
-        std::unique_ptr<vk_window> window;
-        std::unique_ptr<vk_device> device;
-        std::shared_ptr<vk_swapchain> swapchain;
-        std::unique_ptr<vk_pipeline> pipeline;
-        std::unique_ptr<vk_renderer> renderer;
+        vk_engine _engine;
     };
 }

@@ -36,8 +36,6 @@ namespace vk
         void beginCommandBuffers();
         void endCommandBuffers();
 
-        static VkFormat imageFormat() { return _imageFormat; }
-        static VkFormat depthFormat() { return _depthFormat; }
         VkExtent2D extent() const { return _extent; }
 
         VkImageView imageView(uint32_t imageIndex) { return _imageViews[imageIndex]; }
@@ -67,8 +65,7 @@ namespace vk
         void init();
 
         // validations
-
-        bool formatAvailable(VkFormat format);
+        void checkFormatSupport();
 
         uint32_t _currentFrame = 0;
         static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -84,9 +81,6 @@ namespace vk
         std::vector<VmaAllocation> _depthImagesAllocations;
         std::vector<FrameSync> _frameSync;
         std::vector<VkFence> _imagesInFlight;
-
-        static VkFormat _imageFormat;
-        static VkFormat _depthFormat;
         VkExtent2D _extent;
 
         vk_context& _context;

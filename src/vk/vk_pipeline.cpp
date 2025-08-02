@@ -188,9 +188,9 @@ namespace vk
 
         createInfo.pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         createInfo.pipelineRenderingInfo.colorAttachmentCount = 1;
-        createInfo.pipelineRenderingInfo.pColorAttachmentFormats = &createInfo.colorFormat;
-        createInfo.pipelineRenderingInfo.depthAttachmentFormat = vk_swapchain::depthFormat();
-        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = vk_swapchain::depthFormat();
+        createInfo.pipelineRenderingInfo.pColorAttachmentFormats = &vk_context::imageFormat;
+        createInfo.pipelineRenderingInfo.depthAttachmentFormat = vk_context::depthFormat;
+        createInfo.pipelineRenderingInfo.stencilAttachmentFormat = vk_context::depthFormat;
 
         createInfo.dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
         createInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

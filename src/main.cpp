@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "vk/vk_application.hpp"
+#include "test.cpp"
 
 int main()
 {
@@ -9,8 +10,7 @@ int main()
 
     try
     {
-        vk::vk_application app;
-        app.run();
+        vk::vk_application::getInstance().run();
 
         return EXIT_SUCCESS;
     }

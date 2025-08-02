@@ -1,5 +1,7 @@
 #include "vk_offscreen.hpp"
 
+#include <iostream>
+
 namespace vk
 {
     vk_offscreen_renderer::vk_offscreen_renderer(size_t imageCount, VkExtent2D extent)

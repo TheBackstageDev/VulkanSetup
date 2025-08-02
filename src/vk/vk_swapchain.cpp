@@ -5,9 +5,6 @@
 
 namespace vk
 {
-    VkFormat vk_swapchain::_imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-    VkFormat vk_swapchain::_depthFormat = VK_FORMAT_D32_SFLOAT;
-
     vk_swapchain::vk_swapchain(std::unique_ptr<vk_device>& device, vk_context& context)
         : _device(device), _context(context)
     {
@@ -160,15 +157,30 @@ namespace vk
         info.clipped = VK_TRUE;
         info.oldSwapchain = _oldswapchain ? _oldswapchain->_swapchain : VK_NULL_HANDLE;
 
-        _imageFormat = surfaceFormat.format;
-        _depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
-
+        checkFormatSupport();
         if (vkCreateSwapchainKHR(_device->device(), &info, nullptr, &_swapchain) != VK_SUCCESS)
             throw std::runtime_error("Failed to create swapchain");
         
         vkGetSwapchainImagesKHR(_device->device(), _swapchain, &imageCount, nullptr);
         _images.resize(imageCount);
         vkGetSwapchainImagesKHR(_device->device(), _swapchain, &imageCount, _images.data());
+    }
+
+    void vk_swapchain::checkFormatSupport()
+    {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(_device->phydevice(), vk_context::imageFormat, &formatProperties);
+
+        if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
+        {
+            throw std::runtime_error("Image format does not support color attachment!");
+        }
+
+        vkGetPhysicalDeviceFormatProperties(_device->phydevice(), vk_context::depthFormat, &formatProperties);
+        if (!(formatProperties.optimalTilingFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)))
+        {
+            throw std::runtime_error("Depth format does not support depth stencil attachment or sampled image!");
+        }
     }
 
     void vk_swapchain::createCommandPool()
@@ -194,7 +206,7 @@ namespace vk
             info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             info.image = _images[i];
             info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            info.format = _imageFormat;
+            info.format = vk_context::imageFormat;
 
             info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
             info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -230,7 +242,7 @@ namespace vk
             imageInfo.extent.depth = 1;
             imageInfo.mipLevels = 1;
             imageInfo.arrayLayers = 1;
-            imageInfo.format = _depthFormat;
+            imageInfo.format = vk_context::depthFormat;
             imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -248,7 +260,7 @@ namespace vk
             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             viewInfo.image = _depthImages[i];
             viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            viewInfo.format = _depthFormat;
+            viewInfo.format = vk_context::depthFormat;
             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             viewInfo.subresourceRange.baseMipLevel = 0;
             viewInfo.subresourceRange.levelCount = 1;
