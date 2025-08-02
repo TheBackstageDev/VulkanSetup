@@ -49,11 +49,11 @@ namespace eng
 
     // Model
 
-    model_t::model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices, std::unique_ptr<vk::vk_device>& device)
+    model_t::model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices)
         : vertices(vertices), indices(indices)
     {
-        createVertexBuffer(device);
-        createIndexBuffer(device);
+        createVertexBuffer();
+        createIndexBuffer();
     }
 
     model_t::~model_t()
@@ -74,23 +74,21 @@ namespace eng
         vkCmdDrawIndexed(cmd, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
     }
 
-    void model_t::createVertexBuffer(std::unique_ptr<vk::vk_device>& device)
+    void model_t::createVertexBuffer()
     {
         VkDeviceSize bufferSize = sizeof(vertex_t) * vertices.size();
 
-        _vertexBuffer = std::make_unique<vk::vk_buffer>(device,
-                                    vertices.data(),
+        _vertexBuffer = std::make_unique<vk::vk_buffer>(vertices.data(),
                                     bufferSize,
                                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                     VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
 
-    void model_t::createIndexBuffer(std::unique_ptr<vk::vk_device>& device)
+    void model_t::createIndexBuffer()
     {
         VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
         
-        _indexBuffer = std::make_unique<vk::vk_buffer>(device,
-                                    indices.data(),
+        _indexBuffer = std::make_unique<vk::vk_buffer>(indices.data(),
                                     bufferSize,
                                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                     VMA_MEMORY_USAGE_CPU_TO_GPU);

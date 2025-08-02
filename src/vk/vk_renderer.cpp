@@ -251,7 +251,9 @@ namespace vk
         
         _info.scene->for_all<eng::model_t, eng::transform_t>([&](ecs::entity_id_t id, eng::model_t& model, eng::transform_t& transform) 
         {
-            pcPush push = { transform.mat4(), _info.scene->get<eng::texture_t>(id).id };
+            pcPush push = { transform.mat4(), 0 };
+
+            // auto& texId = _info.scene->get<eng::texture_t>(id); /* TO DO: add game object create method; */
 
             vkCmdPushConstants(
                 cmd,

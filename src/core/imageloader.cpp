@@ -36,7 +36,6 @@ namespace core
         VkDeviceSize imageSize = width * height * channels;
 
         vk::vk_buffer stagingBuffer {
-            _device,
             pixels,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,

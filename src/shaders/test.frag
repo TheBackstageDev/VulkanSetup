@@ -16,7 +16,7 @@ layout(push_constant) uniform PushConstant
     uint textureId;
 } push;
 
-#define SUN_DIRECTION vec3(0.0f, 0.5f, 0.2f)
+#define SUN_DIRECTION vec3(0.0f, -0.5f, 0.2f)
 #define AMBIENT_LIGHT vec3(0.1f, 0.1f, 0.1f)
 
 void main()

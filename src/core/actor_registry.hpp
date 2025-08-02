@@ -6,7 +6,7 @@
 
 namespace core
 {
-    using ActorConstructor = std::function<void(vk::vk_engine&)>;
+    using ActorConstructor = std::function<void(vk::vk_engine&, ecs::scene_t<>&)>;
 
     inline std::vector<ActorConstructor>& getActorRegistry() {
         static std::vector<ActorConstructor> registry;
@@ -20,8 +20,9 @@ namespace core
 
 #define REGISTER_ACTOR(ActorType) \
     static bool _##ActorType##_registered = []() { \
-        core::registerActor([](vk::vk_engine& engine) { \
-            engine.addActor<ActorType>(); \
+        core::registerActor([](vk::vk_engine& engine, ecs::scene_t<>& scene) { \
+            ActorType* actor = engine.addActor<ActorType>(); \
+            actor->setScene(scene); \
         }); \
         return true; \
     }()

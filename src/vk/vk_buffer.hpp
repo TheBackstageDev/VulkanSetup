@@ -4,6 +4,7 @@
 #include <vk_mem_alloc.h>
 
 #include "vk_device.hpp"
+#include "vk_context.hpp"
 #include <memory>
 
 namespace vk
@@ -12,7 +13,7 @@ namespace vk
     {
     public:
         vk_buffer() = default;
-        vk_buffer(std::unique_ptr<vk_device>& device, const void* data, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+        vk_buffer(const void* data, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
         ~vk_buffer();
 
         void* mapped() const { return _mapped; }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <volk/volk.h>
+#include "core/ecs.hpp"
 
 namespace core
 {
@@ -14,6 +15,14 @@ namespace core
         virtual bool ShouldDestroy() { return false; }
         virtual ~systemactor() = default;
 
-        uint32_t id;
+        void setId(uint32_t id) { _id = id; } // to change for UUID later;
+        uint32_t getId() { return _id; }
+
+        void setScene(ecs::scene_t<>& scene) { _scene = &scene; }
+    private:
+        uint32_t _id;
+
+    protected:
+        ecs::scene_t<>* _scene;
     };
 } // namespace core

@@ -6,7 +6,7 @@ namespace eng
 {
     Assimp::Importer modelloader_t::importer;
 
-    void modelloader_t::loadModel(const std::string& path, model_t* models, std::unique_ptr<vk::vk_device>& device)
+    void modelloader_t::loadModel(const std::string& path, model_t* models)
     {
         const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |
@@ -20,7 +20,7 @@ namespace eng
         }
 
         std::vector<model_t> processedModels;
-        processScene(scene, processedModels, device);
+        processScene(scene, processedModels);
 
         if (processedModels.size() > 1)
         {
@@ -33,7 +33,7 @@ namespace eng
         }
     }
 
-    void modelloader_t::processScene(const aiScene* scene, std::vector<model_t>& models, std::unique_ptr<vk::vk_device>& device)
+    void modelloader_t::processScene(const aiScene* scene, std::vector<model_t>& models)
     {
         if (!scene->HasMeshes())
         {
@@ -44,10 +44,10 @@ namespace eng
         models.resize(scene->mNumMeshes);
 
         for (int32_t i = 0; i < scene->mNumMeshes; ++i)
-            processMesh(scene->mMeshes[i], models[i], device);
+            processMesh(scene->mMeshes[i], models[i]);
     }
 
-    void modelloader_t::processMesh(aiMesh* mesh, model_t& model, std::unique_ptr<vk::vk_device>& device)
+    void modelloader_t::processMesh(aiMesh* mesh, model_t& model)
     {
         if (mesh->mNumVertices < 3)
         {
@@ -63,7 +63,7 @@ namespace eng
 
         processVertices(mesh, vertices, indices);
 
-        model = model_t{vertices, indices, device};
+        model = model_t{vertices, indices};
     }
 
     void modelloader_t::processVertices(aiMesh* mesh, std::vector<model_t::vertex_t>& vertices, std::vector<model_t::index_t>& indices)

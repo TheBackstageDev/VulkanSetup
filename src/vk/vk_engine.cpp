@@ -137,7 +137,6 @@ namespace vk
         defaultGlobalUbo.view = glm::mat4(1.0f);
 
         globalBuffer = std::make_unique<vk_buffer>(
-            device,
             &defaultGlobalUbo,
             sizeof(globalUbo),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -173,14 +172,6 @@ namespace vk
     void vk_engine::setupBaseScene()
     {
         renderer->setScene(_scene);
-
-        eng::model_t model;
-        eng::modelloader_t::loadModel("src/resource/suzane.obj", &model, device);
-
-        ecs::entity_id_t modelId = _scene.create();
-        _scene.construct<eng::transform_t>(modelId).translation = {0.0f, 0.0f, 2.0f};
-        _scene.construct<eng::model_t>(modelId) = model;
-        _scene.construct<eng::texture_t>(modelId) = {defaultTextureChannelInfo.second, defaultTextureChannelInfo.first};
     }
 
     void vk_engine::runRendering(VkCommandBuffer cmd)
@@ -204,23 +195,23 @@ namespace vk
 
         for (auto& actor : _actors)
             actor->Update(info.deltaTime);
+            
+        _actors.erase(std::remove_if(_actors.begin(), _actors.end(),
+            [](const std::unique_ptr<core::systemactor>& actor) {
+                return actor->ShouldDestroy();
+            }), _actors.end());
+            
+        for (auto& actor : _actors)
+            actor->OnRender(cmd);
 
         for (auto& actor : _actors)
             actor->LateUpdate(info.deltaTime);
-
-        _actors.erase(std::remove_if(_actors.begin(), _actors.end(),
-        [](const std::unique_ptr<core::systemactor>& actor) {
-            return actor->ShouldDestroy();
-        }), _actors.end());
-
-        for (auto& actor : _actors)
-            actor->OnRender(cmd);
     }
 
     void vk_engine::runMainLoop()
     {
         for (auto& ctor : core::getActorRegistry()) 
-            ctor(*this); 
+            ctor(*this, _scene); 
         
         for (auto& actor : _actors)
             actor->Awake();

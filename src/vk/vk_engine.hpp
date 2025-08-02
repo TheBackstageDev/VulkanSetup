@@ -33,12 +33,15 @@ namespace vk
         void runMainLoop();
         
         template<typename T, typename... Args>
-        void addActor(Args&&... args) {
+        T* addActor(Args&&... args) {
             static uint32_t lastId = 0;
 
             auto actor = std::make_unique<T>(std::forward<Args>(args)...);
-            actor->id = ++lastId;
-            _actors.push_back(std::move(actor));
+            actor->setId(++lastId);
+            T* actorPtr = actor.get();
+
+            _actors.push_back(std::move(actor));  
+            return actorPtr;                       
         }
 
         frameinfo_t getFrameInfo() const { return vk_renderer::getFrameInfo(); }

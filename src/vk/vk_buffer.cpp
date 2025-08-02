@@ -2,7 +2,7 @@
 
 namespace vk
 {
-    vk_buffer::vk_buffer(std::unique_ptr<vk_device>& device, const void* data, 
+    vk_buffer::vk_buffer(const void* data, 
     VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
         : _size(size)
     {

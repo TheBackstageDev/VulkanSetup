@@ -40,14 +40,14 @@ namespace eng
         using index_t = uint32_t;
 
         model_t() = default;
-        model_t(std::vector<vertex_t>& vertices, std::vector<index_t>& indices, std::unique_ptr<vk::vk_device>& device);
+        model_t(std::vector<vertex_t>& vertices, std::vector<index_t>& indices);
         ~model_t();
 
         void bind(VkCommandBuffer cmd);
         void draw(VkCommandBuffer cmd);
     private:
-        void createVertexBuffer(std::unique_ptr<vk::vk_device>& device);
-        void createIndexBuffer(std::unique_ptr<vk::vk_device>& device);
+        void createVertexBuffer();
+        void createIndexBuffer();
 
         std::vector<vertex_t> vertices;
         std::vector<index_t> indices;
