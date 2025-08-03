@@ -11,6 +11,7 @@
 #include "core/imageloader.hpp"
 
 #include "core/ecs.hpp"
+#include "core/ecs_defines.hpp"
 #include "core/systemactor.hpp"
 #include "engine/transform_t.hpp"
 #include "engine/camera_t.hpp"
@@ -54,6 +55,20 @@ namespace vk
 
         void runExecutionPipeline(VkCommandBuffer cmd);
         void runRendering(VkCommandBuffer cmd);
+
+        // Engine UI
+
+        void runEngineUI();
+        void runObjectList();
+        void runProperties();
+        void runConsole();
+
+        // EngineUI Variables
+
+        ecs::entity_id_t _currentlySelected = ecs::null_entity_id;
+
+        // Console Variables
+
 
         void initVulkan();
         void initImgui(const VkPipelineRenderingCreateInfo& pipelineRenderingInfo);

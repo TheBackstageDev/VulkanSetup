@@ -440,7 +440,7 @@ public:
 private:
   // TODO: make a free entities queue
   const entity_id_t _max_entities;
-  uint32_t _latest_entity = 0;
+  entity_id_t _latest_entity = 0;
   std::vector<entity_description_t> _entities;
   std::vector<base_component_pool_t<page_size> *> _component_pools;
   component_id_t component_id_counter = 0;

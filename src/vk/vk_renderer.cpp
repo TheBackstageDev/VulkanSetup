@@ -8,11 +8,13 @@ namespace vk
 
     vk_renderer::vk_renderer(
         std::unique_ptr<vk_pipeline>& pipeline, 
-        std::shared_ptr<vk_swapchain>& swapchain, 
         std::unique_ptr<vk_device>& device, 
-        vk_context& context, std::unique_ptr<vk_window>& window
+        vk_context& context, std::unique_ptr<vk_window>& window,
+        std::shared_ptr<vk_swapchain>& swapchain,
+        vk_offscreen_renderer* offscreen
     )    
-        : pipeline(pipeline), swapchain(swapchain), device(device), context(context), window(window)
+        : pipeline(pipeline), swapchain(swapchain), device(device), context(context), window(window),
+        offscreen(offscreen)
     {
         createCommandBuffers();
     }

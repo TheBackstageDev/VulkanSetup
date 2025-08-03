@@ -57,7 +57,7 @@ namespace vk
         pipelineInfo.descriptorSetLayouts = device->getSetLayouts();
 
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
-        renderer = std::make_unique<vk_renderer>(pipeline, swapchain, device, context, window);
+        renderer = std::make_unique<vk_renderer>(pipeline, device, context, window, swapchain);
 
         core::input::setWindow(window->window());
 
@@ -174,6 +174,54 @@ namespace vk
         renderer->setScene(_scene);
     }
 
+    void vk_engine::runEngineUI()
+    {
+        ImGui::Begin("Engine Window");
+
+        ImGuiID dockspace_id = ImGui::GetID("EngineUI");
+        ImGui::DockSpace(dockspace_id);
+
+        ImGui::End();
+
+        runObjectList();
+        runConsole();
+    }
+
+    void vk_engine::runObjectList()
+    {
+        ImGui::Begin("Scene");
+
+        _scene.for_all<eng::transform_t>([&](ecs::entity_id_t& _id, eng::transform_t& _transform) 
+        {
+            std::string label = "Entity Doe";
+            if (_scene.has<core::name_t>(_id))
+                label = _scene.get<core::name_t>(_id).name;
+
+            label = std::string(label + "##" + std::to_string(_id));
+
+            if (ImGui::Selectable(label.c_str(), _currentlySelected == _id)) 
+                _currentlySelected = _id;
+            
+            ImGui::NewLine();
+        });
+
+        ImGui::End();
+    }
+
+    void vk_engine::runProperties()
+    {
+        ImGui::Begin("Properties");
+
+        ImGui::End();
+    }
+
+    void vk_engine::runConsole()
+    {
+        ImGui::Begin("Console");
+
+        ImGui::End();
+    }
+
     void vk_engine::runRendering(VkCommandBuffer cmd)
     {
         globalUbo globalubo{};
@@ -186,7 +234,6 @@ namespace vk
         globalBuffer->bindUniform(cmd, pipeline->layout(), device, globaluboChannelInfo);
 
         renderer->renderScene();
-        renderer->endFrame(cmd);
     }
 
     void vk_engine::runExecutionPipeline(VkCommandBuffer cmd)
@@ -231,6 +278,9 @@ namespace vk
             {
                 runExecutionPipeline(cmd);
                 runRendering(cmd);
+                runEngineUI();
+
+                renderer->endFrame(cmd);
             }
 
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
