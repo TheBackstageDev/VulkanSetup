@@ -52,6 +52,12 @@ namespace vk
         {
             throw std::runtime_error("Failed to end command buffer for offscreen rendering!");
         }
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmd;
+        vkQueueSubmit(vk_context::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     }
 
     void vk_offscreen_renderer::beginRenderpass(VkCommandBuffer cmd)

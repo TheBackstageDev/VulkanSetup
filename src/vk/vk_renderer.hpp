@@ -38,7 +38,7 @@ namespace vk
             std::unique_ptr<vk_device>& device, vk_context& context, 
             std::unique_ptr<vk_window>& window, 
             std::shared_ptr<vk_swapchain>& swapchain,
-            vk_offscreen_renderer* offscreen = nullptr);
+            std::unique_ptr<vk_offscreen_renderer>* offscreen = nullptr);
 
         ~vk_renderer();
 
@@ -49,12 +49,12 @@ namespace vk
         void renderScene();
         void renderInterface();
         
-        float aspectRatio() { return swapchain->getAspectRatio(); }
+        float aspectRatio() { return offscreen == nullptr ? swapchain->getAspectRatio() : offscreen->get()->aspectRatio(); }
 
         static frameinfo_t& getFrameInfo() { return _info; }
         static float dt() { return _info.deltaTime; }
     private:
-        vk_offscreen_renderer* offscreen = nullptr;
+        std::unique_ptr<vk_offscreen_renderer>* offscreen = nullptr;
 
         std::shared_ptr<vk_swapchain>& swapchain;
         std::unique_ptr<vk_device>& device;

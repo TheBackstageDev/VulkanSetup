@@ -1,6 +1,7 @@
 #include "vk_engine.hpp"
 #include "core/actor_registry.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <chrono>
 
 namespace vk
@@ -49,15 +50,16 @@ namespace vk
         device = std::make_unique<vk_device>(context);
         swapchain = std::make_unique<vk_swapchain>(device, context);
 
-        const std::string pathToVertex = "src\\shaders\\test.vert.spv";
-        const std::string pathToFragment = "src\\shaders\\test.frag.spv";
+        const std::string pathToVertex = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.vert.spv";
+        const std::string pathToFragment = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.frag.spv";
 
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
         pipelineInfo.descriptorSetLayouts = device->getSetLayouts();
 
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
-        renderer = std::make_unique<vk_renderer>(pipeline, device, context, window, swapchain);
+        offscreen = std::make_unique<vk_offscreen_renderer>(swapchain->imageAmmount(), swapchain->extent());
+        renderer = std::make_unique<vk_renderer>(pipeline, device, context, window, swapchain, nullptr);
 
         core::input::setWindow(window->window());
 
@@ -155,7 +157,7 @@ namespace vk
         globaluboChannelInfo = device->setDescriptorData(globalData);
         
         core::image_t defaultImage;
-        core::imageloader_t::loadImage("src/resource/textures/default.png", &defaultImage, device);
+        core::imageloader_t::loadImage("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\textures\\default.png", &defaultImage, device);
 
         VkDescriptorImageInfo textureInfo{};
         textureInfo.sampler = defaultImage.sampler;
@@ -174,16 +176,26 @@ namespace vk
         renderer->setScene(_scene);
     }
 
+    ImVec2 previousWindowSize = {0.0f, 0.0f};
+
     void vk_engine::runEngineUI()
     {
         ImGui::Begin("Engine Window");
 
+        ImVec2 currentSize = ImGui::GetWindowSize();
+        if ((previousWindowSize.x != currentSize.x) && (previousWindowSize.y != currentSize.y))
+        {
+            offscreen->recreate(VkExtent2D{static_cast<uint32_t>(currentSize.x), static_cast<uint32_t>(currentSize.y)});
+            previousWindowSize = currentSize;
+        }
+        
         ImGuiID dockspace_id = ImGui::GetID("EngineUI");
         ImGui::DockSpace(dockspace_id);
 
         ImGui::End();
 
         runObjectList();
+        runProperties();
         runConsole();
     }
 
@@ -201,8 +213,6 @@ namespace vk
 
             if (ImGui::Selectable(label.c_str(), _currentlySelected == _id)) 
                 _currentlySelected = _id;
-            
-            ImGui::NewLine();
         });
 
         ImGui::End();
@@ -211,6 +221,20 @@ namespace vk
     void vk_engine::runProperties()
     {
         ImGui::Begin("Properties");
+
+        if (_currentlySelected == ecs::null_entity_id)
+        {
+            ImGui::Text("No Entity Selected!");
+            ImGui::End();
+
+            return;
+        }
+
+        eng::transform_t& ent_transform = _scene.get<eng::transform_t>(_currentlySelected);
+        
+        ImGui::DragFloat3("Translation", glm::value_ptr(ent_transform.translation), 0.1f);
+        ImGui::DragFloat3("Rotation", glm::value_ptr(ent_transform.rotation), 0.1f);
+        ImGui::DragFloat3("Scale", glm::value_ptr(ent_transform.scale), 0.1f);
 
         ImGui::End();
     }
@@ -225,7 +249,8 @@ namespace vk
     void vk_engine::runRendering(VkCommandBuffer cmd)
     {
         globalUbo globalubo{};
-        cam.perspective(70.f, renderer->aspectRatio());
+        cam.perspective(80.f, renderer->aspectRatio());
+        //cam.ortho(-renderer->aspectRatio(), renderer->aspectRatio(), -1.0f, 1.0f, 0.1f, 10.f);
 
         globalubo.projection = cam.getProjection();
         globalubo.view = cam.getView();

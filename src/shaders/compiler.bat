@@ -36,7 +36,6 @@ for /r "%SHADER_DIR%" %%f in (*.frag) do (
     %GLSLANG_VALIDATOR% -V !SHADER_FILE! -o !OUTPUT_FILE!
     if !ERRORLEVEL! NEQ 0 (
         echo Error compiling !SHADER_FILE!
-        exit /b 1
     )
 )
 

@@ -33,8 +33,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     assimp
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./${CMAKE_SOURCE_DIR})
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE 
     VK_NO_PROTOTYPES
     IMGUI_IMPL_VULKAN_NO_PROTOTYPES

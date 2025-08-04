@@ -2,6 +2,7 @@
 
 #include <volk/volk.h>
 #include "core/ecs.hpp"
+#include "core/ecs_defines.hpp"
 
 namespace core
 {

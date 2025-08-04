@@ -14,8 +14,8 @@ namespace vk
     VkQueue vk_context::graphicsQueue = VK_NULL_HANDLE;
     VkQueue vk_context::presentQueue = VK_NULL_HANDLE;    
 
-    VkFormat vk_context::imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
-    VkFormat vk_context::depthFormat = VK_FORMAT_D32_SFLOAT;
+    VkFormat vk_context::imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+    VkFormat vk_context::depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
 
     void vk_context::init(const vkContextCreateInfo info)
     {

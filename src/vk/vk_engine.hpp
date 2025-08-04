@@ -82,6 +82,8 @@ namespace vk
         std::shared_ptr<vk_swapchain> swapchain;
         std::unique_ptr<vk_pipeline> pipeline;
         std::unique_ptr<vk_renderer> renderer;
+        std::unique_ptr<vk_offscreen_renderer> offscreen;
+
         vk_context context;
 
         // buffers

@@ -11,7 +11,7 @@ namespace vk
         std::unique_ptr<vk_device>& device, 
         vk_context& context, std::unique_ptr<vk_window>& window,
         std::shared_ptr<vk_swapchain>& swapchain,
-        vk_offscreen_renderer* offscreen
+        std::unique_ptr<vk_offscreen_renderer>* offscreen
     )    
         : pipeline(pipeline), swapchain(swapchain), device(device), context(context), window(window),
         offscreen(offscreen)
@@ -183,6 +183,17 @@ namespace vk
     VkCommandBuffer vk_renderer::startFrame()
     {
         assert(!isFrameRunning && "Cannot start new frame while another is running!");
+
+        if (offscreen != nullptr)
+        {
+            VkCommandBuffer cmd = offscreen->get()->beginFrame();
+            _info.cmd = cmd;
+
+            isFrameRunning = true;
+
+            return cmd;
+        }
+
         VkResult result = swapchain->acquireNextImage(&imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || window->resized())
@@ -216,6 +227,15 @@ namespace vk
     void vk_renderer::endFrame(VkCommandBuffer cmd)
     {
         assert(isFrameRunning && "Must have started the frame before ending it!");
+
+        if (offscreen != nullptr)
+        {
+            offscreen->get()->endFrame(cmd);
+            _info.cmd = VK_NULL_HANDLE;
+            isFrameRunning = false;
+            
+            return;
+        }
 
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -255,7 +275,11 @@ namespace vk
         {
             pcPush push = { transform.mat4(), 0 };
 
-            // auto& texId = _info.scene->get<eng::texture_t>(id); /* TO DO: add game object create method; */
+            if (_info.scene->has<eng::texture_t>(id))
+            {
+                auto& texId = _info.scene->get<eng::texture_t>(id); 
+                push.textureId = texId.id;
+            }
 
             vkCmdPushConstants(
                 cmd,

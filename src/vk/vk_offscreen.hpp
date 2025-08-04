@@ -23,6 +23,9 @@ namespace vk
         float aspectRatio() const { return static_cast<float>(_extent.width / _extent.height); } 
 
         void recreate(VkExtent2D newExtent);
+
+        VkImage getImage() { return _images[_imageIndex]; }
+        VkImageView getImageView() { return _imageViews[_imageIndex]; }
     private:
         void beginRenderpass(VkCommandBuffer cmd);
         void endRenderpass(VkCommandBuffer cmd);

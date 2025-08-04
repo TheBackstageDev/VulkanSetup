@@ -12,7 +12,7 @@ namespace core
     void imageloader_t::loadImage(const std::string& path, image_t* pImage, std::unique_ptr<vk::vk_device>& _device)
     {
         int width, height, channels;
-        stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, 0);
+        stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, 4);
 
         if (!pixels)
         {
@@ -25,27 +25,27 @@ namespace core
 
         pImage->width = static_cast<uint32_t>(width);
         pImage->height = static_cast<uint32_t>(height);
-        pImage->format = (channels == 4) ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8_SRGB;
+        pImage->format = VK_FORMAT_R8G8B8A8_SRGB;
         pImage->mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
         pImage->sampler = createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-
         createImage(pImage);
         createImageView(pImage);
 
-        VkDeviceSize imageSize = width * height * channels;
-
+        
+        VkDeviceSize imageSize = width * height * 4;
+        
         vk::vk_buffer stagingBuffer {
             pixels,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VMA_MEMORY_USAGE_CPU_ONLY
         };
-
+        
         transitionImageLayout(pImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
+        
         VkCommandBuffer cmd = vk::vk_context::beginSingleTimeCommand();
-
+        
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
         region.bufferRowLength = 0;
@@ -56,16 +56,15 @@ namespace core
         region.imageSubresource.layerCount = 1;
         region.imageOffset = {0, 0, 0};
         region.imageExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
-
+        
         vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer(), pImage->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
+        
         vk::vk_context::endSingleTimeCommand(cmd);
-
         stbi_image_free(pixels);
-
+        
         createMipMaps(pImage);
     }
-
+    
     void imageloader_t::transitionImageLayout(image_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         VkCommandBuffer cmd = vk::vk_context::beginSingleTimeCommand();
