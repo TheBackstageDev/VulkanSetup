@@ -25,14 +25,13 @@ namespace core
 
         pImage->width = static_cast<uint32_t>(width);
         pImage->height = static_cast<uint32_t>(height);
-        pImage->format = VK_FORMAT_R8G8B8A8_SRGB;
+        pImage->format = vk::vk_context::imageFormat;
         pImage->mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
         pImage->sampler = createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
         createImage(pImage);
         createImageView(pImage);
 
-        
         VkDeviceSize imageSize = width * height * 4;
         
         vk::vk_buffer stagingBuffer {

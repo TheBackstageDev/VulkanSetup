@@ -45,10 +45,7 @@ namespace vk
 
         const VkDevice& device() { return _device; }
         const VkPhysicalDevice phydevice() { return _physical_device; }
-
-        VkQueue graphicsQueue() const { return _graphicsQueue; }
-        VkQueue presentQueue() const { return _presentQueue; }
-
+        
         uint32_t graphicsFamily() const { return _queueFamilies.graphicsFamily.value(); }
         uint32_t presentFamily() const { return _queueFamilies.presentFamily.value(); }
 
@@ -58,10 +55,7 @@ namespace vk
 
         VkDescriptorSet& getDescriptorSet(uint32_t channelId) { return _sets[channelId]; }
         std::vector<VkDescriptorSetLayout> getSetLayouts() const { return _setLayouts; }
-
-        VkCommandBuffer beginSingleTimeCommands();
-        void endSingleTimeCommands(VkCommandBuffer cmd);
-
+        
         static VkPhysicalDeviceLimits limits() { return _properties.limits; }
 
         constexpr vk_channelinfo getChannelInfo() {
@@ -105,9 +99,6 @@ namespace vk
         VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
         
         vk_context& context;
-
-        VkQueue _graphicsQueue;
-        VkQueue _presentQueue;
 
         QueueFamilyIndices _queueFamilies;
 

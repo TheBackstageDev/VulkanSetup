@@ -6,7 +6,9 @@ namespace eng
         : _scene(scene)
     { 
         _id = scene.create();
-        _scene.construct<eng::transform_t>(_id).translation = {0.f, 0.f, 0.f};
+        eng::transform_t& transform = _scene.construct<eng::transform_t>(_id);
+        transform.translation = {0.f, 0.f, 0.f};
+        transform.rotation = {0.f, 0.f, 0.f, 0.f};
     }
 
     void camera_t::ortho(float left, float right, float top, float bottom, float near, float far)

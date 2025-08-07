@@ -1,5 +1,7 @@
 #include "vk_buffer.hpp"
 
+#include <iostream>
+
 namespace vk
 {
     vk_buffer::vk_buffer(const void* data, 
@@ -15,11 +17,18 @@ namespace vk
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = memoryUsage;
 
-        vmaCreateBuffer(vk_context::allocator, &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr);
-
-        if (memoryUsage == VMA_MEMORY_USAGE_CPU_ONLY || memoryUsage == VMA_MEMORY_USAGE_CPU_TO_GPU)
+        if (vmaCreateBuffer(vk_context::allocator, &bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr) != VK_SUCCESS)
         {
-            vmaMapMemory(vk_context::allocator, _allocation, &_mapped);
+            throw std::runtime_error("Failed to create Vulkan buffer");
+        }
+
+        if (data && (memoryUsage == VMA_MEMORY_USAGE_CPU_ONLY || memoryUsage == VMA_MEMORY_USAGE_CPU_TO_GPU))
+        {
+            if (vmaMapMemory(vk_context::allocator, _allocation, &_mapped) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to map Vulkan buffer memory");
+            }
+
             memcpy(_mapped, data, static_cast<size_t>(size));
             vmaUnmapMemory(vk_context::allocator, _allocation);
         }

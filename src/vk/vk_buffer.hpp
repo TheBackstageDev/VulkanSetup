@@ -7,6 +7,8 @@
 #include "vk_context.hpp"
 #include <memory>
 
+#include <iostream>
+
 namespace vk
 {
     class vk_buffer
@@ -42,7 +44,7 @@ namespace vk
     private:
         void* _mapped = nullptr;
 
-        VkDeviceSize _size;    
+        VkDeviceSize _size = 0;    
 
         VkBuffer _buffer = VK_NULL_HANDLE;
         VmaAllocation _allocation = VK_NULL_HANDLE;

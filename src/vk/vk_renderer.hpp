@@ -45,6 +45,10 @@ namespace vk
         VkCommandBuffer startFrame();
         void endFrame(VkCommandBuffer cmd);
 
+        void beginRenderpass(VkCommandBuffer cmd);
+        void beginOffscreenPass(VkCommandBuffer cmd);
+        void endOffscreenPass(VkCommandBuffer cmd);
+
         void setScene(ecs::scene_t<>& scene) { _info.scene = &scene; }
         void renderScene();
         void renderInterface();
@@ -69,7 +73,6 @@ namespace vk
         void freeCommandBuffers();
         void recreateSwapchain();
 
-        void beginRenderpass(VkCommandBuffer cmd);
         void endRenderpass(VkCommandBuffer cmd);
 
         std::vector<VkCommandBuffer> commandBuffers;

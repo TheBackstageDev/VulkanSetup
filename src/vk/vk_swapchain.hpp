@@ -49,10 +49,6 @@ namespace vk
         size_t getCurrentFrame() { return _currentFrame; }
 
         float getAspectRatio() { return static_cast<float>(_extent.width) / static_cast<float>(_extent.height); }
-
-        static VkCommandBuffer beginSingleTimeCommands();
-        static void endSingleTimeCommands(VkCommandBuffer cmd);
-
     private:
         void createSwapchain();
         void createImageViews();

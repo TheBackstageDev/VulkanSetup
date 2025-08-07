@@ -19,6 +19,11 @@ layout(push_constant) uniform PushConstant
 #define SUN_DIRECTION vec3(0.0f, 0.5f, -1.0f)
 #define AMBIENT_LIGHT vec3(0.1f, 0.1f, 0.1f)
 
-void main() {
-    outColor = vec4(1.0, 0.0, 0.0, 1.0); // Solid red
+void main()
+{
+    vec3 lightDirection = normalize(SUN_DIRECTION);
+    float diffuse = max(dot(normal, lightDirection), 0.0f);
+    
+    vec4 texColor = texture(textures[push.textureId], uv);
+    outColor = vec4(texColor.rgb * color.rgb * (AMBIENT_LIGHT + diffuse), color.a);
 }

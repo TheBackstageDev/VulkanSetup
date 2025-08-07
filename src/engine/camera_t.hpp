@@ -27,7 +27,7 @@ namespace eng
     private:
         void setViewYXZ(glm::vec3 translation, glm::quat direction);
 
-        float _aspect = 0.0f;
+        float _aspect;
 
         ecs::entity_id_t _id = ecs::null_entity_id;
         ecs::scene_t<>& _scene;

@@ -37,10 +37,3 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     VK_NO_PROTOTYPES
     IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 )
-
-add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Running shader compilation script..."
-    COMMAND ${CMAKE_SOURCE_DIR}/src/shaders/compiler.bat
-    COMMENT "Compiling shaders..."
-)

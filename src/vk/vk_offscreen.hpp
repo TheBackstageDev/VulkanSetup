@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "vk_context.hpp"
+#include "vK_device.hpp"
 
 namespace vk
 {
@@ -17,28 +18,24 @@ namespace vk
         vk_offscreen_renderer(const vk_offscreen_renderer&) = delete;
         vk_offscreen_renderer& operator=(const vk_offscreen_renderer&) = delete;
 
-        VkCommandBuffer beginFrame();
-        void endFrame(VkCommandBuffer cmd);
-
-        float aspectRatio() const { return static_cast<float>(_extent.width / _extent.height); } 
-
-        void recreate(VkExtent2D newExtent);
-
-        VkImage getImage() { return _images[_imageIndex]; }
-        VkImageView getImageView() { return _imageViews[_imageIndex]; }
-    private:
+        void createNextImage();
         void beginRenderpass(VkCommandBuffer cmd);
         void endRenderpass(VkCommandBuffer cmd);
-
-        VkCommandBuffer currentCommandBuffer() const { return _commandBuffers[_imageIndex]; }
-        void createCommandBuffers();
-        void freeCommandBuffers();
-
+        
+        void recreate(VkExtent2D newExtent);
+        
+        float aspectRatio() const { return static_cast<float>(_extent.width / _extent.height); } 
+        VkImage getImage() { return _images[_imageIndex]; }
+        VkImageView getImageView() { return _imageViews[_imageIndex]; }
+        VkSampler getSampler() { return _sampler; }
+    private:
         void createImages();
         void recreateImages();
 
         void createDepthResources();
         void recreateDepthResources();
+
+        void createSampler();
 
         std::vector<VkImage> _images;
         std::vector<VkImage> _depthImages;
@@ -48,7 +45,8 @@ namespace vk
         std::vector<VmaAllocation> _imageAllocations;
         std::vector<VmaAllocation> _depthImageAllocations;
 
-        std::vector<VkCommandBuffer> _commandBuffers;
+        VkSampler _sampler = VK_NULL_HANDLE;
+
         uint32_t _imageIndex = 0;
 
         VkExtent2D _extent;

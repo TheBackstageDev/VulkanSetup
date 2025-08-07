@@ -22,7 +22,7 @@ namespace vk
     void vk_engine::cleanup()
     {
         vkDeviceWaitIdle(device->device());
-
+        
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -31,7 +31,9 @@ namespace vk
         {
             vkDestroyDescriptorPool(device->device(), imguiPool, nullptr);
             imguiPool = VK_NULL_HANDLE;
+            _currentImage = VK_NULL_HANDLE;
         }
+
     }
     
     void vk_engine::initVulkan()
@@ -59,11 +61,12 @@ namespace vk
 
         pipeline = std::make_unique<vk_pipeline>(device, swapchain, pathToVertex, pathToFragment, pipelineInfo);
         offscreen = std::make_unique<vk_offscreen_renderer>(swapchain->imageAmmount(), swapchain->extent());
-        renderer = std::make_unique<vk_renderer>(pipeline, device, context, window, swapchain, nullptr);
+        renderer = std::make_unique<vk_renderer>(pipeline, device, context, window, swapchain, &offscreen);
 
         core::input::setWindow(window->window());
 
         initImgui(pipelineInfo.pipelineRenderingInfo);
+        createImageSet();
         setupBuffers();
     }
 
@@ -111,7 +114,7 @@ namespace vk
         initInfo.PhysicalDevice = device->phydevice();
         initInfo.Device = device->device();
         initInfo.QueueFamily = device->graphicsFamily();
-        initInfo.Queue = device->graphicsQueue();
+        initInfo.Queue = context.graphicsQueue;
         initInfo.PipelineRenderingCreateInfo = pipelineRenderingInfo;
         initInfo.PipelineCache = VK_NULL_HANDLE;
         initInfo.DescriptorPool = imguiPool;
@@ -148,7 +151,7 @@ namespace vk
         VkDescriptorBufferInfo globalInfo{};
         globalInfo.buffer = globalBuffer->buffer();
         globalInfo.offset = 0;
-        globalInfo.range = sizeof(globalBuffer);
+        globalInfo.range = sizeof(globalUbo);
 
         vk_descriptordata globalData{};
         globalData.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -168,7 +171,7 @@ namespace vk
         texData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         texData.pImageInfo = &textureInfo;
 
-        std::pair<uint32_t, uint32_t> textureChannelInfo = device->setDescriptorData(texData);
+        defaultTextureChannelInfo = device->setDescriptorData(texData);
     }
 
     void vk_engine::setupBaseScene()
@@ -177,21 +180,42 @@ namespace vk
     }
 
     ImVec2 previousWindowSize = {0.0f, 0.0f};
+    bool shouldRecreateOffscreen = false; // Temporary
 
     void vk_engine::runEngineUI()
     {
-        ImGui::Begin("Engine Window");
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar            |
+                                       ImGuiWindowFlags_NoCollapse            |
+                                       ImGuiWindowFlags_NoResize              |
+                                       ImGuiWindowFlags_NoMove                |
+                                       ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                       ImGuiWindowFlags_NoNavFocus            |
+                                       ImGuiWindowFlags_NoBackground;
+
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(viewport->Size);
+        ImGui::Begin("Engine Window", nullptr, windowFlags);
+
+        ImGuiID dockspaceID = ImGui::GetID("EngineUi");
+        ImGui::DockSpace(dockspaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        ImGui::End();
+
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
 
         ImVec2 currentSize = ImGui::GetWindowSize();
-        if ((previousWindowSize.x != currentSize.x) && (previousWindowSize.y != currentSize.y))
+        if ((previousWindowSize.x != currentSize.x) || (previousWindowSize.y != currentSize.y))
         {
-            offscreen->recreate(VkExtent2D{static_cast<uint32_t>(currentSize.x), static_cast<uint32_t>(currentSize.y)});
             previousWindowSize = currentSize;
+            shouldRecreateOffscreen = true;
         }
-        
-        ImGuiID dockspace_id = ImGui::GetID("EngineUI");
-        ImGui::DockSpace(dockspace_id);
-
+            
+        if (_currentImage)
+        {
+            ImGui::Image((ImTextureID)_currentImage, currentSize);
+        }
         ImGui::End();
 
         runObjectList();
@@ -232,9 +256,7 @@ namespace vk
 
         eng::transform_t& ent_transform = _scene.get<eng::transform_t>(_currentlySelected);
         
-        ImGui::DragFloat3("Translation", glm::value_ptr(ent_transform.translation), 0.1f);
-        ImGui::DragFloat3("Rotation", glm::value_ptr(ent_transform.rotation), 0.1f);
-        ImGui::DragFloat3("Scale", glm::value_ptr(ent_transform.scale), 0.1f);
+        runTransform();
 
         ImGui::End();
     }
@@ -244,6 +266,65 @@ namespace vk
         ImGui::Begin("Console");
 
         ImGui::End();
+    }
+
+    const float widthFactor = 4.0f;
+
+    void vk_engine::runTransform()
+    {
+        eng::transform_t& ent_transform = _scene.get<eng::transform_t>(_currentlySelected);
+
+        ImGui::BeginChild(ImGui::GetID("Transform"), ImVec2(0, 0), ImGuiChildFlags_AutoResizeY);
+
+        ImGui::Text("Translation");
+        ImGui::PushID("Translation");
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x / widthFactor);
+        ImGui::DragFloat("X##Translation", &ent_transform.translation.x, 0.1f);
+        ImGui::SameLine();
+        ImGui::DragFloat("Y##Translation", &ent_transform.translation.y, 0.1f);
+        ImGui::SameLine();
+        ImGui::DragFloat("Z##Translation", &ent_transform.translation.z, 0.1f);
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+
+        ImGui::Text("Rotation");
+        ImGui::PushID("Rotation");
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x / widthFactor);
+
+        glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(ent_transform.rotation));
+
+        bool rotationChanged = false;
+        float yaw = eulerAngles.y;   
+        float pitch = eulerAngles.x; 
+        float roll = eulerAngles.z;  
+
+        if (ImGui::DragFloat("Y##Rotation", &yaw, 0.1f, -180.0f, 180.0f))
+            rotationChanged = true;
+        ImGui::SameLine();
+        if (ImGui::DragFloat("X##Rotation", &pitch, 0.1f, -90.0f, 90.0f))
+            rotationChanged = true;
+        ImGui::SameLine();
+        if (ImGui::DragFloat("Z##Rotation", &roll, 0.1f, -180.0f, 180.0f))
+            rotationChanged = true;
+
+        if (rotationChanged)
+            ent_transform.rotation = glm::quat(glm::radians(glm::vec3(pitch, yaw, roll)));
+
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+
+        ImGui::Text("Scale");
+        ImGui::PushID("Scale");
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x / widthFactor);
+        ImGui::DragFloat("X##Scale", &ent_transform.scale.x, 0.1f, 0.01f, 100.0f);
+        ImGui::SameLine();
+        ImGui::DragFloat("Y##Scale", &ent_transform.scale.y, 0.1f, 0.01f, 100.0f);
+        ImGui::SameLine();
+        ImGui::DragFloat("Z##Scale", &ent_transform.scale.z, 0.1f, 0.01f, 100.0f);
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+
+        ImGui::EndChild();
     }
 
     void vk_engine::runRendering(VkCommandBuffer cmd)
@@ -280,6 +361,63 @@ namespace vk
             actor->LateUpdate(info.deltaTime);
     }
 
+    void vk_engine::createImageSet()
+    {
+        VkDescriptorSetLayoutBinding binding{};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        binding.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags{};
+        bindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+        bindingFlags.bindingCount = 1;
+        VkDescriptorBindingFlags flags = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+        bindingFlags.pBindingFlags = &flags;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings = &binding;
+
+        if (vkCreateDescriptorSetLayout(device->device(), &layoutInfo, nullptr, &_imageDescriptorSetLayout) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create descriptor set layout for _currentImage!");
+        }
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = imguiPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &_imageDescriptorSetLayout;
+
+        if (vkAllocateDescriptorSets(device->device(), &allocInfo, &_currentImage) != VK_SUCCESS)
+        {
+            vkDestroyDescriptorSetLayout(device->device(), _imageDescriptorSetLayout, nullptr);
+            throw std::runtime_error("Failed to allocate descriptor set for _currentImage!");
+        }
+    }
+
+    void vk_engine::createImage()
+    {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = offscreen->getImageView();
+        imageInfo.sampler = offscreen->getSampler();
+
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = _currentImage;
+        write.dstBinding = 0;
+        write.dstArrayElement = 0;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        write.descriptorCount = 1;
+        write.pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(device->device(), 1, &write, 0, nullptr);
+    }
+
     void vk_engine::runMainLoop()
     {
         for (auto& ctor : core::getActorRegistry()) 
@@ -299,12 +437,22 @@ namespace vk
 
             std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
+            if (shouldRecreateOffscreen)
+            {
+                offscreen->recreate(VkExtent2D{static_cast<uint32_t>(previousWindowSize.x), static_cast<uint32_t>(previousWindowSize.y)});
+                createImage();
+                shouldRecreateOffscreen = false;
+            }
+
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
+                renderer->beginOffscreenPass(cmd);
                 runExecutionPipeline(cmd);
                 runRendering(cmd);
+                renderer->endOffscreenPass(cmd);
+                
+                renderer->beginRenderpass(cmd);
                 runEngineUI();
-
                 renderer->endFrame(cmd);
             }
 

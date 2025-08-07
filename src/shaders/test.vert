@@ -19,7 +19,7 @@ layout(location = 2) out vec2 fragUV;
 layout(set = 0, binding = 0) uniform globalBuffer {
     mat4 projection;
     mat4 view;
-} global;
+} global; 
 
 void main()
 {

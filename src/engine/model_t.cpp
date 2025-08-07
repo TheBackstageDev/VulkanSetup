@@ -86,7 +86,7 @@ namespace eng
 
     void model_t::createIndexBuffer()
     {
-        VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
+        VkDeviceSize bufferSize = sizeof(index_t) * indices.size();
         
         _indexBuffer = std::make_unique<vk::vk_buffer>(indices.data(),
                                     bufferSize,

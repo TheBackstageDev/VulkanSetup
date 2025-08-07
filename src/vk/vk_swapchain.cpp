@@ -90,7 +90,7 @@ namespace vk
         submitInfo.pSignalSemaphores    = signalSemaphores;
 
         vkResetFences(_device->device(), 1, &_frameSync[currentFrame].inFlightFence);
-        if (vkQueueSubmit(_device->graphicsQueue(), 1, &submitInfo, _frameSync[currentFrame].inFlightFence) != VK_SUCCESS)
+        if (vkQueueSubmit(_context.graphicsQueue, 1, &submitInfo, _frameSync[currentFrame].inFlightFence) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit draw command buffer!");
         }
@@ -103,7 +103,7 @@ namespace vk
         presentInfo.pSwapchains        = &_swapchain;
         presentInfo.pImageIndices      = imageIndex;
 
-        VkResult result = vkQueuePresentKHR(_device->presentQueue(), &presentInfo);
+        VkResult result = vkQueuePresentKHR(_context.presentQueue, &presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 

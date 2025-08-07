@@ -30,7 +30,6 @@ public:
     void Update(float dt) override
     {
         std::cout << "Updated me!" << std::endl;
-        _scene->get<eng::transform_t>(0).applyRotation(glm::vec3(0.f, 15.0f, 0.f) * dt);
         _scene->get<eng::transform_t>(modelId).applyRotation(glm::vec3(0.f, 15.0f, 0.f) * dt);
     }
 

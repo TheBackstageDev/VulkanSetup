@@ -85,6 +85,7 @@ namespace vk
         indexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
         indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
         indexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+        indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
         indexingFeatures.pNext = &bdaFeatures;
         
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
@@ -108,11 +109,8 @@ namespace vk
             throw std::runtime_error("Failed to create logical device");
         }
 
-        vkGetDeviceQueue(_device, _queueFamilies.graphicsFamily.value(), 0, &_graphicsQueue);
-        vkGetDeviceQueue(_device, _queueFamilies.presentFamily.value(), 0, &_presentQueue);
-
-        vk::vk_context::graphicsQueue = _graphicsQueue;
-        vk::vk_context::presentQueue = _presentQueue;
+        vkGetDeviceQueue(_device, _queueFamilies.graphicsFamily.value(), 0, &vk_context::graphicsQueue);
+        vkGetDeviceQueue(_device, _queueFamilies.presentFamily.value(), 0, &vk_context::presentQueue);
 
         volkLoadDevice(_device);
         context.device = _device;

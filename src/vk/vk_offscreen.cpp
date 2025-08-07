@@ -7,7 +7,7 @@ namespace vk
     vk_offscreen_renderer::vk_offscreen_renderer(size_t imageCount, VkExtent2D extent)
         : _imageCount(imageCount), _extent(extent)
     {
-        createCommandBuffers();
+        createSampler();
         createImages();
         createDepthResources();
     }
@@ -15,7 +15,6 @@ namespace vk
     vk_offscreen_renderer::~vk_offscreen_renderer()
     {
         vkDeviceWaitIdle(vk_context::device);
-        freeCommandBuffers();
 
         for (size_t i = 0; i < _imageCount; ++i)
         {
@@ -26,38 +25,17 @@ namespace vk
         }
     }
 
-    VkCommandBuffer vk_offscreen_renderer::beginFrame()
+    void vk_offscreen_renderer::createNextImage()
     {
-        _imageIndex = (_imageIndex % _imageCount);
-        VkCommandBuffer cmd = currentCommandBuffer();
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
+        if (_imageIndex >= _images.size() - 1)
         {
-            throw std::runtime_error("Failed to begin command buffer for offscreen rendering!");
+            recreate(_extent);
+
+            _imageIndex = 0;
+            return;
         }
 
-        beginRenderpass(cmd);
-        return cmd;
-    }
-
-    void vk_offscreen_renderer::endFrame(VkCommandBuffer cmd)
-    {
-        endRenderpass(cmd);
-
-        if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to end command buffer for offscreen rendering!");
-        }
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmd;
-        vkQueueSubmit(vk_context::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        _imageIndex++;
     }
 
     void vk_offscreen_renderer::beginRenderpass(VkCommandBuffer cmd)
@@ -85,7 +63,7 @@ namespace vk
         VkRenderingInfo renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderingInfo.renderArea.offset = { 0, 0 };
-        renderingInfo.renderArea.extent = _extent; // Example extent
+        renderingInfo.renderArea.extent = _extent; 
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &colorAttachment;
@@ -136,56 +114,56 @@ namespace vk
         vkCmdEndRenderingKHR(cmd);
 
         VkImageMemoryBarrier barrier{};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image = _images[_imageIndex];
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.baseMipLevel = 0;
-            barrier.subresourceRange.levelCount = 1;
-            barrier.subresourceRange.baseArrayLayer = 0;
-            barrier.subresourceRange.layerCount = 1;
-
-            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; 
-            barrier.dstAccessMask = 0;
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.image = _images[_imageIndex];
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
 
         vkCmdPipelineBarrier(
             cmd,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
             0,
             0, nullptr,
             0, nullptr,
             1, &barrier);
     }
 
-    void vk_offscreen_renderer::freeCommandBuffers()
+    void vk_offscreen_renderer::createSampler()
     {
-        vkFreeCommandBuffers(
-            vk_context::device, 
-            vk_context::commandPool, 
-            static_cast<uint32_t>(_commandBuffers.size()), 
-            _commandBuffers.data()
-        );
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;  
+        samplerInfo.minFilter = VK_FILTER_LINEAR; 
 
-        _commandBuffers.clear();
-    }
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-    void vk_offscreen_renderer::createCommandBuffers()
-    {
-        _commandBuffers.resize(_imageCount);
+        samplerInfo.anisotropyEnable = VK_FALSE;  
+        samplerInfo.maxAnisotropy = 1.0f;
 
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = vk_context::commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = static_cast<uint32_t>(_imageCount);
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
 
-        if (vkAllocateCommandBuffers(vk_context::device, &allocInfo, _commandBuffers.data()) != VK_SUCCESS)
+        samplerInfo.compareEnable = VK_FALSE;
+        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.mipLodBias = 0.0f;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = 0.0f;
+
+        if (vkCreateSampler(vk_context::device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS)
         {
-            throw std::runtime_error("Failed to allocate command buffers for offscreen rendering!");
+            throw std::runtime_error("Failed to create texture sampler");
         }
     }
 
@@ -195,10 +173,8 @@ namespace vk
 
         vkDeviceWaitIdle(vk_context::device);
 
-        freeCommandBuffers();
         recreateImages();
         recreateDepthResources();
-        createCommandBuffers();
     }
 
     void vk_offscreen_renderer::recreateImages()
@@ -235,8 +211,8 @@ namespace vk
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             imageInfo.imageType = VK_IMAGE_TYPE_2D;
             imageInfo.format = vk_context::imageFormat;
-            imageInfo.extent.width = 800; // Example width
-            imageInfo.extent.height = 600; // Example height
+            imageInfo.extent.width = _extent.width;
+            imageInfo.extent.height = _extent.height;
             imageInfo.extent.depth = 1;
             imageInfo.mipLevels = 1;
             imageInfo.arrayLayers = 1;
@@ -281,8 +257,8 @@ namespace vk
             depthImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             depthImageInfo.imageType = VK_IMAGE_TYPE_2D;
             depthImageInfo.format = vk_context::depthFormat;
-            depthImageInfo.extent.width = 800; // Example width
-            depthImageInfo.extent.height = 600; // Example height
+            depthImageInfo.extent.width = _extent.width; 
+            depthImageInfo.extent.height = _extent.height; 
             depthImageInfo.extent.depth = 1;
             depthImageInfo.mipLevels = 1;
             depthImageInfo.arrayLayers = 1;

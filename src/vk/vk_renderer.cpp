@@ -180,19 +180,19 @@ namespace vk
                 1, &barrier);
     }
 
+    void vk_renderer::beginOffscreenPass(VkCommandBuffer cmd)
+    {
+        offscreen->get()->beginRenderpass(cmd);
+    }
+
+    void vk_renderer::endOffscreenPass(VkCommandBuffer cmd)
+    {
+        offscreen->get()->endRenderpass(cmd);
+    }
+
     VkCommandBuffer vk_renderer::startFrame()
     {
         assert(!isFrameRunning && "Cannot start new frame while another is running!");
-
-        if (offscreen != nullptr)
-        {
-            VkCommandBuffer cmd = offscreen->get()->beginFrame();
-            _info.cmd = cmd;
-
-            isFrameRunning = true;
-
-            return cmd;
-        }
 
         VkResult result = swapchain->acquireNextImage(&imageIndex);
 
@@ -212,8 +212,6 @@ namespace vk
         if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS)
             throw std::runtime_error("Failed to begin command buffer!");
 
-        beginRenderpass(cmd);
-
         isFrameRunning = true;
         _info.cmd = cmd;
         
@@ -227,15 +225,6 @@ namespace vk
     void vk_renderer::endFrame(VkCommandBuffer cmd)
     {
         assert(isFrameRunning && "Must have started the frame before ending it!");
-
-        if (offscreen != nullptr)
-        {
-            offscreen->get()->endFrame(cmd);
-            _info.cmd = VK_NULL_HANDLE;
-            isFrameRunning = false;
-            
-            return;
-        }
 
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);

@@ -49,8 +49,8 @@ namespace vk
     private:
         struct globalUbo
         {
-            alignas(16) glm::mat4 projection{1.0f};
-            alignas(16) glm::mat4 view{1.0f};
+            glm::mat4 projection{1.0f};
+            glm::mat4 view{1.0f};
         };
 
         void runExecutionPipeline(VkCommandBuffer cmd);
@@ -62,13 +62,19 @@ namespace vk
         void runObjectList();
         void runProperties();
         void runConsole();
+        
+        void runTransform();
+
+        void createImageSet();
+        void createImage();
 
         // EngineUI Variables
 
         ecs::entity_id_t _currentlySelected = ecs::null_entity_id;
+        VkDescriptorSet _currentImage = VK_NULL_HANDLE;
+        VkDescriptorSetLayout _imageDescriptorSetLayout = VK_NULL_HANDLE;
 
         // Console Variables
-
 
         void initVulkan();
         void initImgui(const VkPipelineRenderingCreateInfo& pipelineRenderingInfo);
