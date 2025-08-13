@@ -23,7 +23,7 @@ public:
         auto& model = _scene->construct<eng::model_t>(modelId);
         eng::modelloader_t::loadModel("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\suzane.obj", &model);
         
-        _scene->construct<core::name_t>(modelId).name = "Suzane";
+        _scene->construct<core::name_t>(modelId, "Suzane");
     }
 
     // runs every frame

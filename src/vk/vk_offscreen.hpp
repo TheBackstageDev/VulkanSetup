@@ -24,7 +24,7 @@ namespace vk
         
         void recreate(VkExtent2D newExtent);
         
-        float aspectRatio() const { return static_cast<float>(_extent.width / _extent.height); } 
+        float aspectRatio() const { return static_cast<float>(_extent.width) / static_cast<float>(_extent.height); } 
         VkImage getImage() { return _images[_imageIndex]; }
         VkImageView getImageView() { return _imageViews[_imageIndex]; }
         VkSampler getSampler() { return _sampler; }

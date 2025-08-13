@@ -26,7 +26,7 @@ namespace core
     class imageloader_t
     {
     public:
-        static void loadImage(const std::string& path, image_t* pImage, std::unique_ptr<vk::vk_device>& device);
+        static void loadImage(const std::string& path, image_t* pImage);
     private:
         static void createImage(image_t* image);
         static void createImageView(image_t* image);

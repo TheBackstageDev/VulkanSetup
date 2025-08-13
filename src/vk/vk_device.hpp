@@ -28,6 +28,12 @@ namespace vk
         }; 
     };
 
+    struct vk_channelindices
+    {
+        uint32_t channelIndex = UINT32_MAX;
+        uint32_t index = UINT32_MAX;
+    };
+
     struct vk_channelinfo
     {
         std::vector<uint32_t> uniformIndices;
@@ -50,7 +56,7 @@ namespace vk
         uint32_t presentFamily() const { return _queueFamilies.presentFamily.value(); }
 
         // Returns the channel and index of the data which was set;
-        std::pair<uint32_t, uint32_t> setDescriptorData(vk_descriptordata& data, uint32_t channel = -1 /* channel if you alreadly have one */, uint32_t index = -1);
+        vk_channelindices setDescriptorData(vk_descriptordata& data, uint32_t channel = -1 /* channel if you alreadly have one */, uint32_t index = -1);
         void freeDescriptorData(uint32_t index, uint32_t channelId);
 
         VkDescriptorSet& getDescriptorSet(uint32_t channelId) { return _sets[channelId]; }

@@ -54,12 +54,12 @@ namespace vk
         }
 
         window->resetResizedFlag();
-        
-        vkDeviceWaitIdle(device->device());
     }
 
     void vk_renderer::freeCommandBuffers()
     {
+        vkDeviceWaitIdle(device->device());
+
         vkFreeCommandBuffers(device->device(), swapchain->commandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
         commandBuffers.clear();
     }

@@ -133,6 +133,11 @@ namespace vk
 
         ImGui_ImplGlfw_InitForVulkan(window->window(), true);
         ImGui_ImplVulkan_Init(&initInfo);
+
+        // Init UI
+
+        fileSystem = std::make_unique<eng::file_system_t>();
+        //assetHandler = std::make_unique<eng::asset_handler_t>(fileSystem->rootPath(), device);
     }
 
     void vk_engine::setupBuffers()
@@ -160,7 +165,7 @@ namespace vk
         globaluboChannelInfo = device->setDescriptorData(globalData);
         
         core::image_t defaultImage;
-        core::imageloader_t::loadImage("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\textures\\default.png", &defaultImage, device);
+        core::imageloader_t::loadImage("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\textures\\default.png", &defaultImage);
 
         VkDescriptorImageInfo textureInfo{};
         textureInfo.sampler = defaultImage.sampler;
@@ -192,7 +197,8 @@ namespace vk
                                        ImGuiWindowFlags_NoMove                |
                                        ImGuiWindowFlags_NoBringToFrontOnFocus |
                                        ImGuiWindowFlags_NoNavFocus            |
-                                       ImGuiWindowFlags_NoBackground;
+                                       ImGuiWindowFlags_NoBackground          |
+                                       ImGuiWindowFlags_MenuBar;
 
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(viewport->Size);
@@ -203,7 +209,7 @@ namespace vk
 
         ImGui::End();
 
-        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar);
 
         ImVec2 currentSize = ImGui::GetWindowSize();
         if ((previousWindowSize.x != currentSize.x) || (previousWindowSize.y != currentSize.y))
@@ -219,8 +225,9 @@ namespace vk
         ImGui::End();
 
         runObjectList();
-        runProperties();
+        runInspector();
         runConsole();
+        fileSystem->render();
     }
 
     void vk_engine::runObjectList()
@@ -236,19 +243,30 @@ namespace vk
             label = std::string(label + "##" + std::to_string(_id));
 
             if (ImGui::Selectable(label.c_str(), _currentlySelected == _id)) 
+            {
                 _currentlySelected = _id;
+                fileSystem->reset();
+            }
         });
 
         ImGui::End();
     }
 
-    void vk_engine::runProperties()
+    void vk_engine::runInspector()
     {
-        ImGui::Begin("Properties");
+        ImGui::Begin("Inspector");
+
+        if (fileSystem->isFileSelected())
+        {
+            runFileContents();
+
+            ImGui::End();
+            return;
+        }
 
         if (_currentlySelected == ecs::null_entity_id)
         {
-            ImGui::Text("No Entity Selected!");
+            ImGui::Text("No Entity or File Selected!");
             ImGui::End();
 
             return;
@@ -266,6 +284,36 @@ namespace vk
         ImGui::Begin("Console");
 
         ImGui::End();
+    }
+
+    std::string formatFileTime(const std::filesystem::file_time_type& time)
+    {
+        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        auto time_t = std::chrono::system_clock::to_time_t(sctp);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M");
+        return ss.str();
+    }
+
+    void vk_engine::runFileContents()
+    {
+        std::vector<char> fileContents = fileSystem->getFileContents();
+        const eng::fileInfo file = fileSystem->getCurrent();
+
+        ImGui::BeginChild("##File", ImVec2(0, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::Text("File: %s", file.name.c_str());
+        ImGui::Separator();
+
+        ImGui::Text("Contents");
+        ImGui::InputTextMultiline("##Contents", fileContents.data(), 
+                                fileContents.size() + 1, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 3), 
+                                ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_AllowTabInput);
+                                
+        ImGui::Text("Size: %d", file.size);
+        ImGui::Text("Last Modified: %s", formatFileTime(file.lastModified).c_str());
+                                
+        ImGui::EndChild();
     }
 
     const float widthFactor = 4.0f;
@@ -316,11 +364,11 @@ namespace vk
         ImGui::Text("Scale");
         ImGui::PushID("Scale");
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x / widthFactor);
-        ImGui::DragFloat("X##Scale", &ent_transform.scale.x, 0.1f, 0.01f, 100.0f);
+        ImGui::DragFloat("X##Scale", &ent_transform.scale.x, 0.1f, 0.f, 100.0f);
         ImGui::SameLine();
-        ImGui::DragFloat("Y##Scale", &ent_transform.scale.y, 0.1f, 0.01f, 100.0f);
+        ImGui::DragFloat("Y##Scale", &ent_transform.scale.y, 0.1f, 0.f, 100.0f);
         ImGui::SameLine();
-        ImGui::DragFloat("Z##Scale", &ent_transform.scale.z, 0.1f, 0.01f, 100.0f);
+        ImGui::DragFloat("Z##Scale", &ent_transform.scale.z, 0.1f, 0.f, 100.0f);
         ImGui::PopItemWidth();
         ImGui::PopID();
 

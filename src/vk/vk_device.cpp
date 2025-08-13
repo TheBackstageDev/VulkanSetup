@@ -302,7 +302,7 @@ namespace vk
     }
 
     // Returns the channel and index of the data which was set;
-    std::pair<uint32_t, uint32_t> vk_device::setDescriptorData(vk_descriptordata& data, uint32_t channel, uint32_t index)
+    vk_channelindices vk_device::setDescriptorData(vk_descriptordata& data, uint32_t channel, uint32_t index)
     {
         if (channel != UINT32_MAX)
         {
@@ -310,7 +310,7 @@ namespace vk
             _channel.gotoIndex(index);
             _channel.bind(data);
 
-            return std::pair<uint32_t, uint32_t>{channel, index};
+            return vk_channelindices{channel, index};
         }
 
         uint32_t channelId = 0;
@@ -349,7 +349,7 @@ namespace vk
             }
         }
 
-        return std::pair<uint32_t, uint32_t>{channelId, newIndex};
+        return vk_channelindices{channelId, newIndex};
     }
 
     void vk_device::freeDescriptorData(uint32_t index, uint32_t channelId)

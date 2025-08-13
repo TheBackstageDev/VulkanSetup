@@ -9,7 +9,7 @@
 
 namespace core
 {
-    void imageloader_t::loadImage(const std::string& path, image_t* pImage, std::unique_ptr<vk::vk_device>& _device)
+    void imageloader_t::loadImage(const std::string& path, image_t* pImage)
     {
         int width, height, channels;
         stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, 4);
@@ -20,7 +20,7 @@ namespace core
            return;
         }
 
-        VkDevice device = _device->device();
+        VkDevice device = vk::vk_context::device;
         VmaAllocator allocator = vk::vk_context::allocator;
 
         pImage->width = static_cast<uint32_t>(width);

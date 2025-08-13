@@ -28,7 +28,7 @@ namespace vk
 
         void bindUniform(VkCommandBuffer cmd, VkPipelineLayout layout, 
                         std::unique_ptr<vk_device>& _device, 
-                        std::pair<uint32_t, uint32_t>& channelInfo)
+                        vk_channelindices& channelInfo)
         {
             vkCmdBindDescriptorSets(
                 cmd,                            
@@ -36,9 +36,9 @@ namespace vk
                 layout,                     
                 0,                               
                 1,                          
-                &_device->getDescriptorSet(channelInfo.first), 
+                &_device->getDescriptorSet(channelInfo.channelIndex), 
                 0,                                 
-                &channelInfo.second         
+                &channelInfo.index         
             ); 
         }
     private:

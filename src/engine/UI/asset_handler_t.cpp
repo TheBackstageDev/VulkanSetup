@@ -1,0 +1,163 @@
+#include "asset_handler_t.hpp"
+
+#include <sstream>
+#include <fstream>
+
+#include "core/imageloader.hpp"
+#include "engine/modelloader_t.hpp"
+
+namespace eng
+{
+    asset_handler_t::asset_handler_t(std::filesystem::path rootPath, std::unique_ptr<vk::vk_device>& device)
+        : _rootPath(rootPath), _device(device)
+    {
+        initAssets();
+    }
+
+    asset_handler_t::~asset_handler_t()
+    {
+    }
+
+    void asset_handler_t::initAssets()
+    {
+        std::vector<std::filesystem::path> imagesToPrepare;
+        std::vector<std::filesystem::path> modelsToPrepare;
+
+        findAssetsToInit(imagesToPrepare, modelsToPrepare, _rootPath);
+
+        for (auto& path : imagesToPrepare)
+        {
+            core::image_t image;
+            core::imageloader_t::loadImage(path.string(), &image);
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = image.view;
+            imageInfo.sampler = image.sampler; 
+
+            vk::vk_descriptordata imageData{};
+            imageData.pImageInfo = &imageInfo;
+            imageData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+            ecs::entity_id_t imageID = _assets.create();
+            _assets.construct<core::name_t>(imageID).name = path.filename().string();
+            _assets.construct<core::path_t>(imageID).path = path;
+            _assets.construct<vk::vk_channelindices>(imageID) = _device->setDescriptorData(imageData);
+        }
+
+        for (auto& path : modelsToPrepare)
+        {
+            eng::model_t model;
+            eng::modelloader_t::loadModel(path.string(), &model);
+
+            ecs::entity_id_t modelID = _assets.create();
+            _assets.construct<core::name_t>(modelID).name = path.filename().string();
+            _assets.construct<core::path_t>(modelID).path = path;
+            _assets.construct<eng::model_t>(modelID) = model;
+        }
+    }
+
+    void asset_handler_t::findAssetsToInit(std::vector<std::filesystem::path>& images, std::vector<std::filesystem::path>& models, std::filesystem::path current)
+    {
+        for (const auto& entry : std::filesystem::directory_iterator(current))
+        {
+            if (entry.is_directory())
+            {
+                findAssetsToInit(images, models, entry.path());
+                continue;
+            }
+            
+            std::filesystem::path extension = entry.path().extension();
+
+            if (extension == ".png" || extension == ".jpeg" || extension == ".jpg" || extension == ".hdr")
+            {
+                images.push_back(entry.path());
+                continue;
+            }
+            
+            if (extension == ".obj")
+            {
+                models.push_back(entry.path());
+                continue;
+            }
+        }
+    }
+
+    // TO DO: add image creation, and model creation;
+    ASSET_RESULT asset_handler_t::createAsset(const AssetCreateInfo& create_info)
+    {
+        try
+        {
+            if (create_info.name.empty() || create_info.name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
+                std::cerr << "Error: Invalid asset name '" << create_info.name << "'" << std::endl;
+                return ASSET_RESULT::ASSET_RESULT_FAILURE;
+            }
+
+            std::ofstream newFile(create_info.name + create_info.extension, std::ios::binary);
+
+            newFile << create_info.pData;
+
+            newFile.close();
+
+            ecs::entity_id_t newAssetID = _assets.create();
+            _assets.construct<core::path_t>(newAssetID, create_info.path);
+            _assets.construct<core::name_t>(newAssetID, create_info.name);
+
+            return ASSET_RESULT::ASSET_RESULT_SUCCESS;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return ASSET_RESULT::ASSET_RESULT_FAILURE;
+        }
+    }
+
+    ASSET_RESULT asset_handler_t::deleteAsset(ecs::entity_id_t id)
+    {
+        try
+        {
+           core::path_t path = _assets.get<core::path_t>(id);
+
+           if (!std::filesystem::remove(path.path))
+                return ASSET_RESULT::ASSET_RESULT_FAILURE;
+
+            _assets.destroy(id);
+
+            return ASSET_RESULT::ASSET_RESULT_SUCCESS;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return ASSET_RESULT::ASSET_RESULT_FAILURE;
+        }
+    }
+
+    std::string asset_handler_t::getDefaultScript(std::string name)
+    {
+        std::ostringstream ss;
+        ss << "#include <core/systemactor.hpp>\n"
+        << "#include <core/actor_registry.hpp>\n\n"
+        << "using namespace vk;\n"
+        << "using core::systemactor;\n\n"
+        << "#include <iostream>\n\n"
+        << "class " << name << " : public systemactor\n"
+        << "{\n"
+        << "public:\n\n"
+        << "    // runs before the first frame\n"
+        << "    void Awake() override\n"
+        << "    {\n"
+        << "        std::cout << \"Just woke up!\" << std::endl;\n"
+        << "    }\n\n"
+        << "    // runs every frame\n"
+        << "    void Update(float dt) override\n"
+        << "    {\n"
+        << "        std::cout << \"Updated me!\" << std::endl;\n"
+        << "    }\n\n"
+        << "private:\n"
+        << "    // Private data such as entity ID's...\n"
+        << "};\n\n"
+        << "REGISTER_ACTOR(" << name << ");\n";
+
+        return ss.str();
+    }
+} // namespace eng

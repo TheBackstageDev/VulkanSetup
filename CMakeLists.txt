@@ -27,6 +27,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "$ENV{VULKAN_SDK}/Include"
 )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+if(MSVC)
+    set_property(TARGET vkengine PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
     volk::volk
     glfw
@@ -36,4 +41,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_compile_definitions(${PROJECT_NAME} PRIVATE 
     VK_NO_PROTOTYPES
     IMGUI_IMPL_VULKAN_NO_PROTOTYPES
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:${PROJECT_NAME}>
+            ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.exe
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/resource/icons
+            ${CMAKE_BINARY_DIR}/Debug/icons
 )

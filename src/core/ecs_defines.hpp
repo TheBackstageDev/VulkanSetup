@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 
 namespace core
 {
@@ -9,4 +10,8 @@ namespace core
         std::string name;
     };
     
+    struct path_t
+    {
+        std::filesystem::path path;
+    };
 } // namespace core

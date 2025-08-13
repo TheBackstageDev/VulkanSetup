@@ -17,6 +17,9 @@
 #include "engine/camera_t.hpp"
 #include "engine/modelloader_t.hpp"
 
+#include "engine/UI/file_system_t.hpp"
+#include "engine/UI/asset_handler_t.hpp"
+
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/backends/imgui_impl_glfw.h>
@@ -58,12 +61,16 @@ namespace vk
 
         // Engine UI
 
+        std::unique_ptr<eng::file_system_t> fileSystem;
+        std::unique_ptr<eng::asset_handler_t> assetHandler;
+
         void runEngineUI();
         void runObjectList();
-        void runProperties();
+        void runInspector();
         void runConsole();
-        
+
         void runTransform();
+        void runFileContents();
 
         void createImageSet();
         void createImage();
@@ -96,8 +103,8 @@ namespace vk
         std::unique_ptr<vk_buffer> globalBuffer;
 
         // channel infos
-        std::pair<uint32_t, uint32_t> globaluboChannelInfo;
-        std::pair<uint32_t, uint32_t> defaultTextureChannelInfo;
+        vk_channelindices globaluboChannelInfo;
+        vk_channelindices defaultTextureChannelInfo;
 
         // others
         VkDescriptorPool imguiPool;
