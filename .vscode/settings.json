@@ -91,6 +91,7 @@
         "regex": "cpp",
         "stack": "cpp",
         "variant": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "codecvt": "cpp"
     }
 }

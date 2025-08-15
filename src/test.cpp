@@ -21,7 +21,7 @@ public:
         transform.applyRotation(glm::vec3(0.f, 180.0f, 0.f));
 
         auto& model = _scene->construct<eng::model_t>(modelId);
-        eng::modelloader_t::loadModel("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\suzane.obj", &model);
+        eng::modelloader_t::loadModel("src\\resource\\suzane.obj", &model);
         
         _scene->construct<core::name_t>(modelId, "Suzane");
     }

@@ -77,6 +77,9 @@ namespace eng
 
         std::filesystem::path rootPath() const { return _rootPath; }
 
+        bool isTextFileFormats(std::string extension) { return std::find(_textExtensions.begin(), _textExtensions.end(), extension) != _textExtensions.end(); }
+        bool isImageFileFormats(std::string extension) { return std::find(_imageExtensions.begin(), _imageExtensions.end(), extension) != _imageExtensions.end(); }
+
     private:
         void getSystemInfo();
         dirInfo getDirInfo(std::map<std::string, dirInfo>& systemInfo, std::filesystem::path current = "", size_t depth = 0, std::filesystem::path parent = "");
@@ -92,9 +95,11 @@ namespace eng
         std::map<std::string, dirInfo> _systemInfo;
         std::unordered_map<std::string, VkDescriptorSet> _icons;
         
-        bool isTextFileFormats(std::string extension) { return std::find(_textExtensions.begin(), _textExtensions.end(), extension) != _textExtensions.end(); }
         bool fileSelected = false;
         bool updatePathDebounce = false;
+
+        const std::vector<std::string> _imageExtensions = 
+            {".png", ".jpg", ".jpeg"};
 
         const std::vector<std::string> _textExtensions = 
             {".txt", ".hpp", ".cpp"};

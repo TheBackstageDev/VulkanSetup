@@ -3,11 +3,9 @@
 #include <sstream>
 #include <fstream>
 
-#include "core/imageloader.hpp"
-#include "engine/modelloader_t.hpp"
-
 namespace eng
 {
+    static uint32_t lastId = 0;
     asset_handler_t::asset_handler_t(std::filesystem::path rootPath, std::unique_ptr<vk::vk_device>& device)
         : _rootPath(rootPath), _device(device)
     {
@@ -39,10 +37,15 @@ namespace eng
             imageData.pImageInfo = &imageInfo;
             imageData.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-            ecs::entity_id_t imageID = _assets.create();
-            _assets.construct<core::name_t>(imageID).name = path.filename().string();
-            _assets.construct<core::path_t>(imageID).path = path;
-            _assets.construct<vk::vk_channelindices>(imageID) = _device->setDescriptorData(imageData);
+            _images.emplace(path, ImGui_ImplVulkan_AddTexture(image.sampler, image.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+            asset_t asset{};
+            asset.name = path.filename().string();
+            asset.path = path;
+            asset.id = ++lastId;
+            asset.indices = _device->setDescriptorData(imageData);
+
+            _assets.emplace_back(std::move(asset));
         }
 
         for (auto& path : modelsToPrepare)
@@ -50,10 +53,13 @@ namespace eng
             eng::model_t model;
             eng::modelloader_t::loadModel(path.string(), &model);
 
-            ecs::entity_id_t modelID = _assets.create();
-            _assets.construct<core::name_t>(modelID).name = path.filename().string();
-            _assets.construct<core::path_t>(modelID).path = path;
-            _assets.construct<eng::model_t>(modelID) = model;
+            asset_t asset{};
+            asset.name = path.filename().string();
+            asset.path = path;
+            asset.id = ++lastId;
+            
+            _assets.emplace_back(std::move(asset));
+            _models.emplace(path, std::move(model));
         }
     }
 
@@ -99,9 +105,6 @@ namespace eng
 
             newFile.close();
 
-            ecs::entity_id_t newAssetID = _assets.create();
-            _assets.construct<core::path_t>(newAssetID, create_info.path);
-            _assets.construct<core::name_t>(newAssetID, create_info.name);
 
             return ASSET_RESULT::ASSET_RESULT_SUCCESS;
         }
@@ -112,16 +115,14 @@ namespace eng
         }
     }
 
-    ASSET_RESULT asset_handler_t::deleteAsset(ecs::entity_id_t id)
+    ASSET_RESULT asset_handler_t::deleteAsset(uint32_t id)
     {
         try
         {
-           core::path_t path = _assets.get<core::path_t>(id);
-
-           if (!std::filesystem::remove(path.path))
+            if (!std::filesystem::remove(_assets.at(id).path))
                 return ASSET_RESULT::ASSET_RESULT_FAILURE;
 
-            _assets.destroy(id);
+            _assets.erase(std::find_if(_assets.begin(), _assets.end(), [&](const asset_t& asset) { return asset.id == id; }) );
 
             return ASSET_RESULT::ASSET_RESULT_SUCCESS;
         }

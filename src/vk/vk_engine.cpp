@@ -52,8 +52,8 @@ namespace vk
         device = std::make_unique<vk_device>(context);
         swapchain = std::make_unique<vk_swapchain>(device, context);
 
-        const std::string pathToVertex = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.vert.spv";
-        const std::string pathToFragment = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.frag.spv";
+        const std::string pathToVertex = "src\\shaders\\test.vert.spv";
+        const std::string pathToFragment = "src\\shaders\\test.frag.spv";
 
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
@@ -137,7 +137,7 @@ namespace vk
         // Init UI
 
         fileSystem = std::make_unique<eng::file_system_t>();
-        //assetHandler = std::make_unique<eng::asset_handler_t>(fileSystem->rootPath(), device);
+        assetHandler = std::make_unique<eng::asset_handler_t>(fileSystem->rootPath(), device);
     }
 
     void vk_engine::setupBuffers()
@@ -165,7 +165,7 @@ namespace vk
         globaluboChannelInfo = device->setDescriptorData(globalData);
         
         core::image_t defaultImage;
-        core::imageloader_t::loadImage("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\textures\\default.png", &defaultImage);
+        core::imageloader_t::loadImage("src\\resource\\textures\\default.png", &defaultImage);
 
         VkDescriptorImageInfo textureInfo{};
         textureInfo.sampler = defaultImage.sampler;
@@ -286,16 +286,6 @@ namespace vk
         ImGui::End();
     }
 
-    std::string formatFileTime(const std::filesystem::file_time_type& time)
-    {
-        auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-            time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-        auto time_t = std::chrono::system_clock::to_time_t(sctp);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M");
-        return ss.str();
-    }
-
     void vk_engine::runFileContents()
     {
         std::vector<char> fileContents = fileSystem->getFileContents();
@@ -306,13 +296,22 @@ namespace vk
         ImGui::Separator();
 
         ImGui::Text("Contents");
-        ImGui::InputTextMultiline("##Contents", fileContents.data(), 
-                                fileContents.size() + 1, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 3), 
-                                ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_AllowTabInput);
+
+        if (fileSystem->isTextFileFormats(file.extension))
+        {
+            ImGui::InputTextMultiline("##Contents", fileContents.data(), 
+                                    fileContents.size() + 1, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 3), 
+                                    ImGuiInputTextFlags_ReadOnly | ImGuiInputTextFlags_AllowTabInput);
+        }
+
+        if (fileSystem->isImageFileFormats(file.extension))
+        {
+            ImGui::Image(reinterpret_cast<ImTextureID>(assetHandler->getTexture(file.path)), 
+                        ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 3));
+        }
                                 
         ImGui::Text("Size: %d", file.size);
-        ImGui::Text("Last Modified: %s", formatFileTime(file.lastModified).c_str());
-                                
+
         ImGui::EndChild();
     }
 
@@ -507,5 +506,7 @@ namespace vk
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             info.deltaTime = std::chrono::duration<float>(end - start).count();
         }
+
+        vkDeviceWaitIdle(device->device());
     }
 } // namespace vk

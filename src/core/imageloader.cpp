@@ -17,6 +17,7 @@ namespace core
         if (!pixels)
         {
            std::cerr << "Failed to load image: " << path << std::endl;
+           std::cerr << stbi_failure_reason() << std::endl;
            return;
         }
 

@@ -10,6 +10,7 @@ namespace eng
     #define FILE "file"
     #define SCRIPT "script"
     #define FOLDER "folder"
+    #define IMAGE "image"
 
     #define ICON_SIZE 16
 
@@ -32,23 +33,27 @@ namespace eng
 
     void file_system_t::initIcons()
     {
-        std::filesystem::path iconsFolder = "icons";
+        std::filesystem::path iconsFolder = "src/resource/icons";
 
         std::filesystem::path folderIconPath = iconsFolder / "folder.png";
         std::filesystem::path fileIconPath   = iconsFolder / "file.png";
         std::filesystem::path scriptIconPath = iconsFolder / "script.png";
+        std::filesystem::path imageIconPath = iconsFolder / "image.png";
 
         core::image_t folderIcon;
         core::image_t fileIcon;
         core::image_t scriptIcon;
+        core::image_t imageIcon;
 
         core::imageloader_t::loadImage(folderIconPath.string(), &folderIcon);
         core::imageloader_t::loadImage(fileIconPath.string(), &fileIcon);
         core::imageloader_t::loadImage(scriptIconPath.string(), &scriptIcon);
+        core::imageloader_t::loadImage(imageIconPath.string(), &imageIcon);
 
         initSet(folderIcon, "folder");
         initSet(fileIcon, "file");
         initSet(scriptIcon, "script");
+        initSet(imageIcon, "image");
     }
 
     void file_system_t::initSet(core::image_t& icon, std::string name)
@@ -273,8 +278,20 @@ namespace eng
         file.size = std::filesystem::file_size(filePath);
         file.lastModified = std::filesystem::last_write_time(filePath);
         file.extension = filePath.extension().string();
-        file.icon = isTextFileFormats(file.extension) ? _icons[SCRIPT] : _icons[FILE];
-  
+
+        if (isTextFileFormats(file.extension))
+        {
+            file.icon = _icons[SCRIPT];
+        }
+        else if (isImageFileFormats(file.extension))
+        {
+            file.icon = _icons[IMAGE];
+        }
+        else
+        {
+            file.icon = _icons[FILE];
+        }
+
         return file;
     }
 } // namespace eng

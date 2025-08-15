@@ -61,7 +61,6 @@ namespace vk
         vkDeviceWaitIdle(device->device());
 
         vkFreeCommandBuffers(device->device(), swapchain->commandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-        commandBuffers.clear();
     }
 
     void vk_renderer::createCommandBuffers()
