@@ -89,12 +89,20 @@ namespace eng
         void initIcons();
         void initSet(core::image_t& icon, std::string name);
 
+        void filePopup(const fileInfo& file);
+        void dirPopup(dirInfo& dir);
+
+        void dirRename(dirInfo& dir);
+        void fileRename(fileInfo& dir);
+
         const std::filesystem::path _rootPath;
         std::filesystem::path _currentPath = "";
+        std::filesystem::path _newPath = "";
         
         std::map<std::string, dirInfo> _systemInfo;
         std::unordered_map<std::string, VkDescriptorSet> _icons;
         
+        bool renaming = false;
         bool fileSelected = false;
         bool updatePathDebounce = false;
 

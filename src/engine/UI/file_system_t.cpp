@@ -88,18 +88,153 @@ namespace eng
         return buffer;
     }
 
+    void file_system_t::dirPopup(dirInfo& dir)
+    {
+        if (ImGui::BeginPopup("##DirEdit"))
+        {
+            if (ImGui::MenuItem("Create File"))
+            {
+                std::filesystem::path newPath = dir.dirPath / "NoName.txt";
+
+                std::ofstream newFile(newPath);
+                newFile.close();
+
+                _newPath = newPath;
+                _currentPath = dir.dirPath;
+                updatePathDebounce = true;
+            }
+
+            if (ImGui::MenuItem("Create Directory"))
+            {
+                std::filesystem::path newPath = dir.dirPath / "NoNameDir";
+                std::filesystem::create_directory(newPath);
+
+                _newPath = newPath;
+                _currentPath = dir.dirPath;
+                updatePathDebounce = true;
+            }
+
+            if (ImGui::MenuItem("Rename"))
+            {
+                renaming = true;
+                _currentPath = dir.dirPath;
+            }
+            
+            if (ImGui::MenuItem("Delete"))
+            {
+                std::filesystem::remove_all(_currentPath);
+
+                _currentPath = _rootPath;
+                updatePathDebounce = true;
+            }
+            
+            ImGui::EndPopup();
+        }
+    }
+
+    void file_system_t::filePopup(const fileInfo& file)
+    {
+        if (ImGui::BeginPopup("##FileEdit"))
+        {
+            if (ImGui::MenuItem("Rename"))
+            {
+                renaming = true;
+                _currentPath = file.path;
+            }
+            
+            if (ImGui::MenuItem("Delete"))
+            {
+                std::filesystem::remove(_currentPath);
+
+                _currentPath = _rootPath;
+                updatePathDebounce = true;
+            }
+            
+            ImGui::EndPopup();
+        }
+    }
+
+    static char newName[256];
+    void file_system_t::dirRename(dirInfo& dir)
+    {
+        strcpy_s(newName, dir.name.c_str());
+
+        ImGui::SetKeyboardFocusHere();
+        if (ImGui::InputText("##RenameInput", newName, sizeof(newName), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            std::filesystem::path newPath = dir.parentPath / newName;
+
+            try {
+                std::filesystem::path pathToRename = _newPath.empty() ? _currentPath : _newPath;
+
+                std::filesystem::rename(pathToRename, newPath);
+                pathToRename = newPath;
+                updatePathDebounce = true;
+            } catch (const std::exception& e) {
+                std::cerr << "Rename failed: " << e.what() << std::endl;
+            }
+
+            renaming = false;
+            updatePathDebounce = true;
+
+            _currentPath = _rootPath;
+            _newPath.clear();
+        }
+    }
+
+    void file_system_t::fileRename(fileInfo& file)
+    {
+        strcpy_s(newName, file.name.c_str());
+
+        ImGui::SetKeyboardFocusHere();
+        if (ImGui::InputText("##RenameInput", newName, sizeof(newName), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            std::filesystem::path newPath = _newPath.empty() ? _currentPath.parent_path() / newName : _currentPath / newName;
+
+            try {
+                std::filesystem::path pathToRename = _newPath.empty() ? _currentPath : _newPath;
+
+                std::filesystem::rename(pathToRename, newPath);
+                pathToRename = newPath;
+                updatePathDebounce = true;
+            } catch (const std::exception& e) {
+                std::cerr << "Rename failed: " << e.what() << std::endl;
+            }
+
+            renaming = false;
+            updatePathDebounce = true;
+
+            _currentPath = _rootPath;
+            _newPath.clear();
+        }
+    }
+
     void file_system_t::render()
     {
         ImGui::Begin("File System", nullptr);
 
         ImGui::PushID(ImGui::GetID(_rootPath.string().c_str()));
-        ImGuiTreeNodeFlags rootFlags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+        ImGuiTreeNodeFlags rootFlags = ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_DefaultOpen;
 
         if (_currentPath == _rootPath) 
         {
             rootFlags |= ImGuiTreeNodeFlags_Selected;
         }
         bool rootNodeOpen = ImGui::TreeNodeEx("", rootFlags);
+
+        if (ImGui::IsItemClicked())
+        {
+            updatePathDebounce = true;
+            _currentPath = _rootPath;
+        }
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+        {    
+            _currentPath = _rootPath;
+            ImGui::OpenPopup("##DirEdit");
+        }
+
+        dirPopup(_systemInfo.at(_rootPath.string()));
 
         _systemInfo.at(_rootPath.string()).open = rootNodeOpen;
 
@@ -112,7 +247,6 @@ namespace eng
         {
             updatePath(_currentPath);
             updatePathDebounce = false;
-            reset();
         }
 
         if (rootNodeOpen)
@@ -140,7 +274,7 @@ namespace eng
                     flags |= ImGuiTreeNodeFlags_Selected;
                 }
 
-                bool isDirOpen = ImGui::TreeNodeEx("", flags | ImGuiTreeNodeFlags_SpanAvailWidth, "");
+                bool isDirOpen = ImGui::TreeNodeEx(("##" + path).c_str(), flags | ImGuiTreeNodeFlags_SpanAvailWidth, "");
                 dir.open = isDirOpen;
 
                 if (ImGui::IsItemClicked())
@@ -149,14 +283,30 @@ namespace eng
                     updatePathDebounce = true;
                 }
 
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+                { 
+                    _currentPath = path;
+                    ImGui::OpenPopup("##DirEdit");
+                }
+
                 ImGui::SameLine(0.0f, 0.0f);
                 ImGui::Image((ImTextureID)_icons.at(FOLDER), ImVec2(ICON_SIZE, ICON_SIZE));
                 ImGui::SameLine();
-                ImGui::Text("%s", dir.name.c_str());
+
+                if ((renaming && _currentPath == path) || path == _newPath)
+                {
+                    dirRename(dir);
+                }
+                else
+                {
+                    ImGui::Text("%s", dir.name.c_str());
+                }
+
+                dirPopup(dir);
                 
                 if (isDirOpen)
                 {
-                    for (const auto& file : dir.files)
+                    for (auto& file : dir.files)
                     {
                         ImGui::PushID(ImGui::GetID(file.name.c_str()));
                         ImGui::Indent(5.0f);
@@ -167,19 +317,35 @@ namespace eng
                             fileFlags |= ImGuiTreeNodeFlags_Selected;
                         }
 
-                        bool isFileOpen = ImGui::TreeNodeEx("", fileFlags);
+                        bool isFileOpen = ImGui::TreeNodeEx(("##" + file.path.string()).c_str(), fileFlags);
                         if (ImGui::IsItemClicked())
                         {
                             _currentPath = file.path;
                             fileSelected = true;
                         }
-                        
+
+                        if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+                        {
+                            _currentPath = file.path;
+                            ImGui::OpenPopup("##FileEdit");
+                        }
+
+                        filePopup(file);
+
                         ImGui::SameLine(0.0f, 0.0f);
                         if (file.icon) {
                             ImGui::Image((ImTextureID)file.icon, ImVec2(ICON_SIZE, ICON_SIZE));
                             ImGui::SameLine(0.0f, 0.0f);
                         }
-                        ImGui::Text("%s", file.name.c_str());
+
+                        if ((renaming && _currentPath == file.path) || file.path == _newPath)
+                        {
+                            fileRename(file);
+                        }
+                        else
+                        {
+                            ImGui::Text("%s", file.name.c_str());
+                        }
   
                         if (isFileOpen)
                             ImGui::TreePop();
@@ -194,7 +360,6 @@ namespace eng
             }
             ImGui::TreePop();
         }
-
         ImGui::PopID();
         ImGui::End();
     }

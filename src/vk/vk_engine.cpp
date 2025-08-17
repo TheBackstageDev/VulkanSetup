@@ -220,7 +220,7 @@ namespace vk
             
         if (_currentImage)
         {
-            ImGui::Image((ImTextureID)_currentImage, currentSize);
+            ImGui::Image(reinterpret_cast<ImTextureID>(_currentImage), currentSize);
         }
         ImGui::End();
 
@@ -310,7 +310,7 @@ namespace vk
                         ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y / 3));
         }
                                 
-        ImGui::Text("Size: %d", file.size);
+        ImGui::Text("Size: %d bytes", file.size);
 
         ImGui::EndChild();
     }

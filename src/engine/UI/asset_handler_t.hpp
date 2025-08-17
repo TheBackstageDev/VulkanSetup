@@ -68,7 +68,6 @@ namespace eng
             return _models.at(path);
         }
 
-
         VkDescriptorSet getTexture(std::filesystem::path path)
         {
             return _images.at(path);
