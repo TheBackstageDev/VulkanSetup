@@ -93,5 +93,6 @@
         "variant": "cpp",
         "filesystem": "cpp",
         "codecvt": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/gabri/OneDrive/Documentos/GitHub/VulkanSetup"
 }

@@ -235,11 +235,15 @@ namespace vk
         _sets.resize(numChannels, VK_NULL_HANDLE);
         _setLayouts.resize(numChannels, VK_NULL_HANDLE);
 
+        auto& limits = _properties.limits;
+
         for (int32_t i = 0; i < numChannels; ++i)
         {
             VkDescriptorSetLayoutBinding binding{};
             binding.binding = 0;
-            binding.descriptorCount = 1;
+            binding.descriptorCount =  (i < numUniform) ? limits.maxDescriptorSetUniformBuffers : 
+                                       (i < numUniform + numSSBO) ? limits.maxDescriptorSetStorageBuffers : 
+                                       limits.maxDescriptorSetSampledImages;
 
             if (i < numUniform) {
                 binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -405,14 +409,12 @@ namespace vk
         }
 
         vkUpdateDescriptorSets(_device.device(), 1, &write, 0, nullptr);
-        
-        --_countIndices;
     }
 
     void vk_resourcechannel::free()
     {
         freeIndices.push_back(_index);
-        _index = -1;
+        _index = UINT32_MAX;
     }
 
 } // namespace vk

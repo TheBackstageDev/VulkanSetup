@@ -77,8 +77,9 @@ namespace eng
 
         std::filesystem::path rootPath() const { return _rootPath; }
 
-        bool isTextFileFormats(std::string extension) { return std::find(_textExtensions.begin(), _textExtensions.end(), extension) != _textExtensions.end(); }
-        bool isImageFileFormats(std::string extension) { return std::find(_imageExtensions.begin(), _imageExtensions.end(), extension) != _imageExtensions.end(); }
+        static bool isTextFileFormats(std::string extension) { return std::find(_textExtensions.begin(), _textExtensions.end(), extension) != _textExtensions.end(); }
+        static bool isImageFileFormats(std::string extension) { return std::find(_imageExtensions.begin(), _imageExtensions.end(), extension) != _imageExtensions.end(); }
+        static bool isModelFileFormats(std::string extension) { return std::find(_modelExtensions.begin(), _modelExtensions.end(), extension) != _modelExtensions.end(); }
 
     private:
         void getSystemInfo();
@@ -106,11 +107,10 @@ namespace eng
         bool fileSelected = false;
         bool updatePathDebounce = false;
 
-        const std::vector<std::string> _imageExtensions = 
-            {".png", ".jpg", ".jpeg"};
+        static const std::vector<std::string> _imageExtensions;
+        static const std::vector<std::string> _textExtensions;
+        static const std::vector<std::string> _modelExtensions;
 
-        const std::vector<std::string> _textExtensions = 
-            {".txt", ".hpp", ".cpp"};
     }; 
 } // namespace eng
 

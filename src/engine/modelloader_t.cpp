@@ -6,7 +6,7 @@ namespace eng
 {
     Assimp::Importer modelloader_t::importer;
 
-    void modelloader_t::loadModel(const std::string& path, model_t* models)
+    bool modelloader_t::loadModel(const std::string& path, model_t* models)
     {
         const aiScene *scene = importer.ReadFile(path,
         aiProcess_CalcTangentSpace |
@@ -16,7 +16,7 @@ namespace eng
         if (nullptr == scene)
         {
             std::cout << importer.GetErrorString();
-            return;
+            return false;
         }
 
         std::vector<model_t> processedModels;
@@ -31,6 +31,8 @@ namespace eng
         {
             models[0] = processedModels.at(0);
         }
+
+        return true;
     }
 
     void modelloader_t::processScene(const aiScene* scene, std::vector<model_t>& models)

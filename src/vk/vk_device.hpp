@@ -145,8 +145,8 @@ namespace vk
 
         const VkDescriptorType _type;
     private:
-        uint32_t _channelId = -1;
-        uint32_t _index = -1;
+        uint32_t _channelId = UINT32_MAX;
+        uint32_t _index = UINT32_MAX;
 
         const size_t _maxIndices = 0;
         size_t _countIndices = 0;

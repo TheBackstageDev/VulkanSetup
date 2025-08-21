@@ -16,7 +16,7 @@ namespace eng
     class modelloader_t
     {
     public:
-        static void loadModel(const std::string& path, model_t* models);
+        static bool loadModel(const std::string& path, model_t* models);
     private:
         static Assimp::Importer importer;
 

@@ -9,8 +9,6 @@ namespace vk
     vk_engine::vk_engine()
     {
         initVulkan();
-        setupBuffers();
-
         setupBaseScene();
     }
 
@@ -33,7 +31,6 @@ namespace vk
             imguiPool = VK_NULL_HANDLE;
             _currentImage = VK_NULL_HANDLE;
         }
-
     }
     
     void vk_engine::initVulkan()
@@ -52,8 +49,8 @@ namespace vk
         device = std::make_unique<vk_device>(context);
         swapchain = std::make_unique<vk_swapchain>(device, context);
 
-        const std::string pathToVertex = "src\\shaders\\test.vert.spv";
-        const std::string pathToFragment = "src\\shaders\\test.frag.spv";
+        const std::string pathToVertex = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.vert.spv";
+        const std::string pathToFragment = "C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\shaders\\test.frag.spv";
 
         pipelineCreateInfo pipelineInfo{};
         vk_pipeline::defaultPipelineCreateInfo(pipelineInfo);
@@ -65,9 +62,9 @@ namespace vk
 
         core::input::setWindow(window->window());
 
+        setupBuffers();
         initImgui(pipelineInfo.pipelineRenderingInfo);
         createImageSet();
-        setupBuffers();
     }
 
     void vk_engine::initImgui(const VkPipelineRenderingCreateInfo& pipelineRenderingInfo)
@@ -165,7 +162,7 @@ namespace vk
         globaluboChannelInfo = device->setDescriptorData(globalData);
         
         core::image_t defaultImage;
-        core::imageloader_t::loadImage("src\\resource\\textures\\default.png", &defaultImage);
+        core::imageloader_t::loadImage("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\textures\\default.png", &defaultImage);
 
         VkDescriptorImageInfo textureInfo{};
         textureInfo.sampler = defaultImage.sampler;
@@ -479,6 +476,9 @@ namespace vk
         while (!window->should_close())
         {
             glfwPollEvents();
+            if (assetHandler->handleEvents())
+                fileSystem->update();
+            
             auto& info = renderer->getFrameInfo();
             info.channelIndices = device->getChannelInfo();
 

@@ -23,6 +23,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     include/glm/
     include/stb/
     include/assimp/
+    include/efsw/
     include/imgui/
     "$ENV{VULKAN_SDK}/Include"
 )
@@ -36,6 +37,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     volk::volk
     glfw
     assimp
+    efsw
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE 
@@ -44,13 +46,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-            $<TARGET_FILE:${PROJECT_NAME}>
-            ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.exe
-)
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/src/resource/icons
             ${CMAKE_BINARY_DIR}/Debug/icons
 )
+
+message(STATUS ${CMAKE_SOURCE_DIR})
