@@ -67,8 +67,11 @@ namespace vk
         void runEngineUI();
         void runObjectList();
         void runInspector();
+        void runComponentEditor();
         void runConsole();
 
+        void runTexture();
+        void runModel();
         void runTransform();
         void runFileContents();
 
@@ -77,6 +80,7 @@ namespace vk
 
         // EngineUI Variables
 
+        uint32_t _currentlySelectedComponent = UINT32_MAX;
         ecs::entity_id_t _currentlySelected = ecs::null_entity_id;
         VkDescriptorSet _currentImage = VK_NULL_HANDLE;
         VkDescriptorSetLayout _imageDescriptorSetLayout = VK_NULL_HANDLE;

@@ -53,7 +53,11 @@ namespace eng
                         if (file_system_t::isImageFileFormats(extension))
                         {
                             core::image_t image;
-                            core::imageloader_t::loadImage(new_path.string(), &image);
+                            if (!core::imageloader_t::loadImage(new_path.string(), &image))
+                            {
+                                --lastId;
+                                return false;
+                            }
 
                             VkDescriptorImageInfo imageInfo{};
                             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

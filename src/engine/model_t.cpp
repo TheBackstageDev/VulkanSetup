@@ -49,8 +49,8 @@ namespace eng
 
     // Model
 
-    model_t::model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices)
-        : vertices(vertices), indices(indices)
+    model_t::model_t(std::vector<vertex_t>& vertices, std::vector<uint32_t>& indices, std::string name)
+        : vertices(vertices), indices(indices), _name(name)
     {
         createVertexBuffer();
         createIndexBuffer();

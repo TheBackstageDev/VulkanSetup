@@ -272,8 +272,134 @@ namespace vk
         eng::transform_t& ent_transform = _scene.get<eng::transform_t>(_currentlySelected);
         
         runTransform();
+        runComponentEditor();
+
+        runModel();
+        runTexture();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.7f, 0.1f, 1.0f));
+        if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 20.f)))
+        {
+            ImGui::OpenPopup("##ComponentList"); 
+        }
+        ImGui::PopStyleColor();
 
         ImGui::End();
+    }
+
+    const float boxSize = 100.f;
+    const float imageSize = 64.f;
+
+    void vk_engine::runComponentEditor()
+    {
+        if (ImGui::BeginPopup("##ComponentList"))
+        {
+            bool hasModel = _scene.has<eng::model_t>(_currentlySelected);
+
+            uint32_t index = 0;
+
+            if (assetHandler->getTextures().empty())
+            {
+                ImGui::Text("No Textures Available!");
+            }
+
+            if (hasModel)
+            {
+                ImGui::BeginChild("TextureList", ImVec2(0, 0), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize, ImGuiWindowFlags_HorizontalScrollbar);
+                for (auto& pair : assetHandler->getTextures())
+                {
+                    auto& texture = pair.second;
+                    std::string name = pair.first.filename().string();
+                    std::string id = "##Texture_" + std::to_string(index);
+
+                    ImGui::PushID(index);
+                    bool selected = _currentlySelectedComponent == index;
+
+                    ImGui::BeginGroup();
+                    if (ImGui::Selectable(id.c_str(), selected, ImGuiSelectableFlags_DontClosePopups, ImVec2(boxSize, boxSize)))
+                    {
+                        _currentlySelectedComponent = index;
+                    }
+
+                    if (texture != VK_NULL_HANDLE)
+                    {
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - imageSize) / 2); 
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (boxSize - 10));
+                        ImGui::Image(reinterpret_cast<ImTextureID>(texture), ImVec2(imageSize, imageSize));
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - ImGui::CalcTextSize(name.c_str()).x) / 2); 
+                        ImGui::Text("%s", name.c_str());
+                    }
+                    else
+                    {
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - ImGui::CalcTextSize("No Texture").x) / 2);
+                        ImGui::Text("No Texture");
+                    }
+                    ImGui::EndGroup();
+
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        if (!_scene.has<eng::texture_t>(_currentlySelected)) 
+                            _scene.construct<eng::texture_t>(_currentlySelected);
+                                    
+                        vk::vk_channelindices indices = assetHandler->getIndices(pair.first);
+
+                        eng::texture_t tex;
+                        tex.channelId = indices.channelIndex;
+                        tex.id = indices.index;
+
+                        _scene.get<eng::texture_t>(_currentlySelected) = tex;
+                        _currentlySelectedComponent = UINT32_MAX;
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    ImGui::PopID();
+                    ++index;
+                }
+                ImGui::EndChild();
+            }
+            else // Able to receive a new model;
+            {
+                ImGui::BeginChild("ModelList", ImVec2(0, 200), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize, ImGuiWindowFlags_HorizontalScrollbar);
+                
+                if (assetHandler->getModels().empty())
+                {
+                    ImGui::Text("No Models Available!");
+                }
+
+                for (auto& pair : assetHandler->getModels())
+                {
+                    std::string name = pair.first.filename().string();
+                    std::string id = "##model_" + std::to_string(index);
+
+                    ImGui::PushID(index);
+                    bool selected = _currentlySelectedComponent == index;
+
+                    if (ImGui::Selectable(id.c_str(), selected, ImGuiSelectableFlags_DontClosePopups, ImVec2(boxSize, boxSize)))
+                    {
+                        _currentlySelectedComponent = index;
+                    }
+
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - ImGui::CalcTextSize(name.c_str()).x) / 2);
+                    ImGui::Text("%s", name.c_str());
+
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        if (!_scene.has<eng::model_t>(_currentlySelected))
+                            _scene.construct<eng::model_t>(_currentlySelected);
+
+                        _scene.get<eng::model_t>(_currentlySelected) = assetHandler->getModel(pair.first);
+                        _currentlySelectedComponent = UINT32_MAX;
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    ImGui::PopID();
+                    ++index;
+                }
+                ImGui::EndChild();
+            }
+
+            ImGui::EndPopup();
+        }
     }
 
     void vk_engine::runConsole()
@@ -369,6 +495,62 @@ namespace vk
         ImGui::PopID();
 
         ImGui::EndChild();
+    }
+
+    void vk_engine::runModel()
+    {
+        if (_scene.has<eng::model_t>(_currentlySelected))
+        {
+            ImGui::BeginChild("##ModelDisplay", ImVec2(boxSize, boxSize), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+            eng::model_t model = _scene.get<eng::model_t>(_currentlySelected);
+
+            ImGui::Text("%s", model.name().c_str());
+            if (ImGui::Button("Remove Model", ImVec2(ImGui::GetContentRegionAvail().x, 20.f)))
+            {
+                _scene.remove<eng::model_t>(_currentlySelected);
+            }
+            ImGui::EndChild();
+        }
+    }
+
+    void vk_engine::runTexture()
+    {
+        if (_scene.has<eng::texture_t>(_currentlySelected))
+        {
+            ImGui::BeginChild("##TextureDisplay", ImVec2(boxSize, boxSize), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+            eng::texture_t tex = _scene.get<eng::texture_t>(_currentlySelected);
+
+            void* textureHandle = VK_NULL_HANDLE;
+            std::string textureName = "Unknown Texture";
+            for (const auto& pair : assetHandler->getTextures())
+            {
+                auto indices = assetHandler->getIndices(pair.first);
+                if (indices.channelIndex == tex.channelId && indices.index == tex.id)
+                {
+                    textureHandle = pair.second;
+                    textureName = pair.first.filename().string();
+                    break;
+                }
+            }
+            if (textureHandle != VK_NULL_HANDLE)
+            {
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - imageSize) / 2);
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
+                ImGui::Image(reinterpret_cast<ImTextureID>(textureHandle), ImVec2(imageSize, imageSize));
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - ImGui::CalcTextSize(textureName.c_str()).x) / 2);
+                ImGui::Text("%s", textureName.c_str());
+            }
+            else
+            {
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (boxSize - ImGui::CalcTextSize("No Texture").x) / 2);
+                ImGui::Text("No Texture");
+            }
+            if (ImGui::Button("Remove Texture", ImVec2(ImGui::GetContentRegionAvail().x, 20.f)))
+            {
+                _scene.remove<eng::texture_t>(_currentlySelected);
+            }
+            ImGui::EndChild();
+        }
     }
 
     void vk_engine::runRendering(VkCommandBuffer cmd)

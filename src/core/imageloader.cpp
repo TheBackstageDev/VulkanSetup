@@ -9,7 +9,7 @@
 
 namespace core
 {
-    void imageloader_t::loadImage(const std::string& path, image_t* pImage)
+    bool imageloader_t::loadImage(const std::string& path, image_t* pImage)
     {
         int width, height, channels;
         stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, 4);
@@ -18,7 +18,7 @@ namespace core
         {
            std::cerr << "Failed to load image: " << path << std::endl;
            std::cerr << stbi_failure_reason() << std::endl;
-           return;
+           return false;
         }
 
         VkDevice device = vk::vk_context::device;
@@ -63,6 +63,8 @@ namespace core
         stbi_image_free(pixels);
         
         createMipMaps(pImage);
+
+        return true;
     }
     
     void imageloader_t::transitionImageLayout(image_t* image, VkImageLayout oldLayout, VkImageLayout newLayout)

@@ -40,11 +40,13 @@ namespace eng
         using index_t = uint32_t;
 
         model_t() = default;
-        model_t(std::vector<vertex_t>& vertices, std::vector<index_t>& indices);
+        model_t(std::vector<vertex_t>& vertices, std::vector<index_t>& indices, std::string name = "Joe Doe");
         ~model_t();
 
         void bind(VkCommandBuffer cmd);
         void draw(VkCommandBuffer cmd);
+
+        std::string name() const { return _name; }
     private:
         void createVertexBuffer();
         void createIndexBuffer();
@@ -54,6 +56,8 @@ namespace eng
 
         std::shared_ptr<vk::vk_buffer> _vertexBuffer;
         std::shared_ptr<vk::vk_buffer> _indexBuffer;
+
+        std::string _name = "Unknown Model";
     };
 
 } // namespace eng

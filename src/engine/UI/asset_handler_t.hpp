@@ -84,6 +84,9 @@ namespace eng
             return _images.at(path);
         }
 
+        std::unordered_map<std::filesystem::path, VkDescriptorSet>& getTextures() { return _images; }
+        std::unordered_map<std::filesystem::path, eng::model_t>& getModels() { return _models; }
+
         void handleFileAction(efsw::WatchID watchid, const std::string& dir, const std::string& filename,
             efsw::Action action, std::string old_filename) override;
         
