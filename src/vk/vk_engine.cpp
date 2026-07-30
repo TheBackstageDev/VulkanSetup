@@ -568,25 +568,6 @@ namespace vk
         renderer->renderScene();
     }
 
-    void vk_engine::runExecutionPipeline(VkCommandBuffer cmd)
-    {
-        auto& info = renderer->getFrameInfo();
-
-        for (auto& actor : _actors)
-            actor->Update(info.deltaTime);
-            
-        _actors.erase(std::remove_if(_actors.begin(), _actors.end(),
-            [](const std::unique_ptr<core::systemactor>& actor) {
-                return actor->ShouldDestroy();
-            }), _actors.end());
-            
-        for (auto& actor : _actors)
-            actor->OnRender(cmd);
-
-        for (auto& actor : _actors)
-            actor->LateUpdate(info.deltaTime);
-    }
-
     void vk_engine::createImageSet()
     {
         VkDescriptorSetLayoutBinding binding{};
@@ -646,14 +627,15 @@ namespace vk
 
     void vk_engine::runMainLoop()
     {
-        for (auto& ctor : core::getActorRegistry()) 
-            ctor(*this, _scene); 
-        
-        for (auto& actor : _actors)
-            actor->Awake();
+        ecs::entity_id_t modelId = _scene.create();
+        auto& transform = _scene.construct<eng::transform_t>(modelId);
+        transform.translation = {0.f, 0.f, 2.0f};
+        transform.applyRotation(glm::vec3(0.f, 180.0f, 0.f));
 
-        for (auto& actor : _actors)
-            actor->Start();
+        auto& model = _scene.construct<eng::model_t>(modelId);
+        eng::modelloader_t::loadModel("C:\\Users\\gabri\\OneDrive\\Documentos\\GitHub\\VulkanSetup\\src\\resource\\suzane.obj", &model);
+        
+        _scene.construct<core::name_t>(modelId, "Suzane");
 
         while (!window->should_close())
         {
@@ -676,7 +658,6 @@ namespace vk
             if (VkCommandBuffer cmd = renderer->startFrame()) 
             {
                 renderer->beginOffscreenPass(cmd);
-                runExecutionPipeline(cmd);
                 runRendering(cmd);
                 renderer->endOffscreenPass(cmd);
                 

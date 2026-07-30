@@ -35,18 +35,6 @@ namespace vk
         ~vk_engine();
 
         void runMainLoop();
-        
-        template<typename T, typename... Args>
-        T* addActor(Args&&... args) {
-            static uint32_t lastId = 0;
-
-            auto actor = std::make_unique<T>(std::forward<Args>(args)...);
-            actor->setId(++lastId);
-            T* actorPtr = actor.get();
-
-            _actors.push_back(std::move(actor));  
-            return actorPtr;                       
-        }
 
         frameinfo_t getFrameInfo() const { return vk_renderer::getFrameInfo(); }
     private:
@@ -56,7 +44,6 @@ namespace vk
             glm::mat4 view{1.0f};
         };
 
-        void runExecutionPipeline(VkCommandBuffer cmd);
         void runRendering(VkCommandBuffer cmd);
 
         // Engine UI

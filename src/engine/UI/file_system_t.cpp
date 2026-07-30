@@ -43,7 +43,7 @@ namespace eng
 
     void file_system_t::initIcons()
     {
-        std::filesystem::path iconsFolder = "icons";
+        std::filesystem::path iconsFolder = "src/resource/icons";
 
         std::filesystem::path folderIconPath = iconsFolder / "folder.png";
         std::filesystem::path fileIconPath   = iconsFolder / "file.png";

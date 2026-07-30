@@ -110,7 +110,6 @@ namespace eng
         static const std::vector<std::string> _imageExtensions;
         static const std::vector<std::string> _textExtensions;
         static const std::vector<std::string> _modelExtensions;
-
     }; 
 } // namespace eng
 

@@ -44,11 +44,3 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     VK_NO_PROTOTYPES
     IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 )
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/resource/icons
-            ${CMAKE_BINARY_DIR}/Debug/icons
-)
-
-message(STATUS ${CMAKE_SOURCE_DIR})
